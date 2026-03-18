@@ -13,39 +13,16 @@ serve(async (req) => {
   try {
     const { text, word } = await req.json();
 
-    // Use Lovable AI to get concise Korean dictionary definition
-    const response = await fetch("https://llm-gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          {
-            role: "system",
-            content: "You are a concise English-Korean dictionary. Given an English word and its definition, provide a brief Korean translation in dictionary style. Use only comma-separated Korean words/short phrases. No sentences, no explanations. Example: 'command' → '명령, 지휘'. Example: 'happy' → '행복한, 기쁜'. Reply with ONLY the Korean translation.",
-          },
-          {
-            role: "user",
-            content: `Word: ${word || ""}\nDefinition: ${text}`,
-          },
-        ],
-        max_tokens: 50,
-        temperature: 0.1,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("AI translation error:", response.status);
-      return new Response(JSON.stringify({ translation: text }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Translate the word itself for concise Korean meaning
+    const wordUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ko`;
+    const wordRes = await fetch(wordUrl);
+    let translation = word;
+    if (wordRes.ok) {
+      const wordData = await wordRes.json();
+      translation = wordData.responseData?.translatedText || word;
+    } else {
+      await wordRes.text();
     }
-
-    const data = await response.json();
-    const translation = data.choices?.[0]?.message?.content?.trim() || text;
 
     return new Response(JSON.stringify({ translation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

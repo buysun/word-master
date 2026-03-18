@@ -16,9 +16,10 @@ export async function lookupWord(word: string): Promise<WordData> {
   
   const phonetic = entry.phonetic || entry.phonetics?.find((p: any) => p.text)?.text || '';
 
-  // Get first definition
+  // Collect up to 3 short definition keywords for concise Korean translation
   let definition = '';
   let exampleSentence = '';
+  const keyWords: string[] = [];
   
   for (const meaning of entry.meanings) {
     for (const def of meaning.definitions) {
@@ -28,9 +29,7 @@ export async function lookupWord(word: string): Promise<WordData> {
       if (!exampleSentence && def.example) {
         exampleSentence = def.example;
       }
-      if (definition && exampleSentence) break;
     }
-    if (definition && exampleSentence) break;
   }
   
   // Generate a simple example if none found
