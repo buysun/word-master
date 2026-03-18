@@ -1,5 +1,8 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface WordData {
   word: string;
+  phonetic: string;
   definition: string;
   exampleSentence: string;
 }
