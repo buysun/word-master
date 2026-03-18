@@ -14,7 +14,68 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_results: {
+        Row: {
+          id: string
+          quiz_type: string
+          result: number
+          updated_at: string
+          user_cookie: string
+          word_id: string
+        }
+        Insert: {
+          id?: string
+          quiz_type?: string
+          result?: number
+          updated_at?: string
+          user_cookie: string
+          word_id: string
+        }
+        Update: {
+          id?: string
+          quiz_type?: string
+          result?: number
+          updated_at?: string
+          user_cookie?: string
+          word_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_results_word_id_fkey"
+            columns: ["word_id"]
+            isOneToOne: false
+            referencedRelation: "searched_words"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      searched_words: {
+        Row: {
+          definition: string
+          example_sentence: string
+          id: string
+          searched_at: string
+          user_cookie: string
+          word: string
+        }
+        Insert: {
+          definition: string
+          example_sentence: string
+          id?: string
+          searched_at?: string
+          user_cookie: string
+          word: string
+        }
+        Update: {
+          definition?: string
+          example_sentence?: string
+          id?: string
+          searched_at?: string
+          user_cookie?: string
+          word?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
