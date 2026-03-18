@@ -45,6 +45,7 @@ export default function Index() {
         .from("searched_words")
         .insert({
           word: result.word,
+          phonetic: result.phonetic,
           definition: result.definition,
           example_sentence: result.exampleSentence,
           user_cookie: cookie,
@@ -163,6 +164,7 @@ export default function Index() {
           <WordCard
             key={card.id}
             word={card.word}
+            phonetic={(card as any).phonetic || ''}
             definition={card.definition}
             exampleSentence={card.example_sentence}
           />

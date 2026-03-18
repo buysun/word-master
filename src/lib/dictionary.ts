@@ -1,5 +1,8 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface WordData {
   word: string;
+  phonetic: string;
   definition: string;
   exampleSentence: string;
 }
@@ -11,6 +14,8 @@ export async function lookupWord(word: string): Promise<WordData> {
   const data = await res.json();
   const entry = data[0];
   
+  const phonetic = entry.phonetic || entry.phonetics?.find((p: any) => p.text)?.text || '';
+
   // Get first definition
   let definition = '';
   let exampleSentence = '';
@@ -32,10 +37,20 @@ export async function lookupWord(word: string): Promise<WordData> {
   if (!exampleSentence) {
     exampleSentence = `I learned the word "${word}" today.`;
   }
-  
+
+  // Translate definition to Korean
+  let koreanDef = definition;
+  try {
+    const { data } = await supabase.functions.invoke("translate", {
+      body: { text: definition },
+    });
+    if (data?.translation) koreanDef = data.translation;
+  } catch {}
+
   return {
     word: entry.word,
-    definition,
+    phonetic,
+    definition: koreanDef,
     exampleSentence,
   };
 }

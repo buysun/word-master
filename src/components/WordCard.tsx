@@ -5,11 +5,12 @@ import { motion } from "framer-motion";
 
 interface WordCardProps {
   word: string;
+  phonetic?: string;
   definition: string;
   exampleSentence: string;
 }
 
-export default function WordCard({ word, definition, exampleSentence }: WordCardProps) {
+export default function WordCard({ word, phonetic, definition, exampleSentence }: WordCardProps) {
   return (
     <motion.div
       initial={{ scale: 0.85, opacity: 0, y: 20 }}
@@ -18,7 +19,10 @@ export default function WordCard({ word, definition, exampleSentence }: WordCard
       className="rounded-lg bg-card p-4 shadow-sm border border-border"
     >
       <div className="flex items-center justify-between mb-2">
-        <h3 className="font-display text-xl font-bold text-foreground">{word}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-display text-xl font-bold text-foreground">{word}</h3>
+          {phonetic && <span className="text-sm text-muted-foreground font-mono">{phonetic}</span>}
+        </div>
         <div className="flex gap-1">
           <Button
             variant="ghost"

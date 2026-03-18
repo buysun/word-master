@@ -54,6 +54,7 @@ export type Database = {
           definition: string
           example_sentence: string
           id: string
+          phonetic: string | null
           searched_at: string
           user_cookie: string
           word: string
@@ -62,6 +63,7 @@ export type Database = {
           definition: string
           example_sentence: string
           id?: string
+          phonetic?: string | null
           searched_at?: string
           user_cookie: string
           word: string
@@ -70,6 +72,7 @@ export type Database = {
           definition?: string
           example_sentence?: string
           id?: string
+          phonetic?: string | null
           searched_at?: string
           user_cookie?: string
           word?: string
