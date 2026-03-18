@@ -42,7 +42,7 @@ export async function lookupWord(word: string): Promise<WordData> {
   let koreanDef = definition;
   try {
     const { data } = await supabase.functions.invoke("translate", {
-      body: { text: definition },
+      body: { text: definition, word: entry.word },
     });
     if (data?.translation) koreanDef = data.translation;
   } catch {}
