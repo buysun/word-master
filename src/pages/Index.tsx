@@ -164,6 +164,7 @@ export default function Index() {
           <WordCard
             key={card.id}
             word={card.word}
+            phonetic={(card as any).phonetic || ''}
             definition={card.definition}
             exampleSentence={card.example_sentence}
           />
