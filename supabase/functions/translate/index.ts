@@ -13,20 +13,35 @@ serve(async (req) => {
   try {
     const { text, word } = await req.json();
 
-    // Use Google Translate unofficial API for concise translation
-    const prompt = `${word}: ${text}`;
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ko`;
-    const res = await fetch(url);
-
-    if (!res.ok) {
-      console.error("Translation API error:", res.status);
-      return new Response(JSON.stringify({ translation: text }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Translate the word itself for concise Korean meaning
+    const wordUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|ko`;
+    const wordRes = await fetch(wordUrl);
+    let wordTranslation = word;
+    if (wordRes.ok) {
+      const wordData = await wordRes.json();
+      wordTranslation = wordData.responseData?.translatedText || word;
+    } else {
+      await wordRes.text(); // consume body
     }
 
-    const data = await res.json();
-    const translation = data.responseData?.translatedText || text;
+    // Also translate a short definition phrase for additional context
+    // Extract first few words of definition to get a secondary meaning
+    const shortDef = text.split('.')[0].replace(/^(An?|The|To)\s+/i, '').trim();
+    const defUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(shortDef)}&langpair=en|ko`;
+    const defRes = await fetch(defUrl);
+    let defTranslation = '';
+    if (defRes.ok) {
+      const defData = await defRes.json();
+      defTranslation = defData.responseData?.translatedText || '';
+    } else {
+      await defRes.text();
+    }
+
+    // Combine: use word translation, add def translation if different
+    let translation = wordTranslation;
+    if (defTranslation && defTranslation !== wordTranslation && defTranslation.length < 20) {
+      translation = `${wordTranslation}, ${defTranslation}`;
+    }
 
     return new Response(JSON.stringify({ translation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
