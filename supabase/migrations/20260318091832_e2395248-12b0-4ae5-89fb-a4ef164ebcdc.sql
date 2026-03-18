@@ -1,0 +1,1 @@
+ALTER TABLE public.searched_words ADD COLUMN IF NOT EXISTS phonetic TEXT DEFAULT '';
