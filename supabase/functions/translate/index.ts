@@ -13,22 +13,24 @@ serve(async (req) => {
   try {
     const { text, word } = await req.json();
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${Deno.env.get("GROQ_API_KEY")}`,
+        "Authorization": `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
       },
       body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           {
             role: "system",
-            content: `You are a Korean-English dictionary assistant. Given an English word and its definition, respond with ONLY a JSON object with two fields:
-1. "translation": All major Korean meanings of the word, comma-separated (e.g., "명령, 지휘, 통솔"). Include ALL common meanings. No English, no explanations.
-2. "example": A simple English sentence using the word, suitable for a Korean 9th grader (중3). Use simple grammar and common vocabulary. The sentence should be natural and easy to understand.
+            content: `You are a Korean-English dictionary. Given an English word and its definition, respond with ONLY a JSON object:
+{"translation":"한국어 뜻들(쉼표 구분)","example":"중3 수준 영어 예문"}
 
-Respond ONLY with the JSON object, nothing else.`
+Rules:
+- translation: 해당 단어의 주요 한국어 뜻을 모두 쉼표로 구분 (예: "명령, 지휘, 통솔"). 영어 금지, 설명 금지.
+- example: 중학교 3학년이 이해할 수 있는 쉬운 영어 문장 1개.
+- JSON만 출력. 다른 텍스트 금지.`
           },
           {
             role: "user",
@@ -42,7 +44,7 @@ Respond ONLY with the JSON object, nothing else.`
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("AI API error:", errText);
+      console.error("AI API error:", response.status, errText);
       throw new Error("AI API failed");
     }
 
@@ -52,11 +54,12 @@ Respond ONLY with the JSON object, nothing else.`
     let translation = word;
     let example = "";
     try {
-      const parsed = JSON.parse(content);
+      // Remove markdown code fences if present
+      const cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+      const parsed = JSON.parse(cleaned);
       translation = parsed.translation || word;
       example = parsed.example || "";
     } catch {
-      // If JSON parse fails, try to extract from text
       translation = content;
     }
 
