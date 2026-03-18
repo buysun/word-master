@@ -13,34 +13,20 @@ serve(async (req) => {
   try {
     const { text } = await req.json();
 
-    const res = await fetch("https://api.ai.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "You are a translator. Translate the given English definition to Korean. Return ONLY the Korean translation, nothing else. Keep it concise.",
-          },
-          { role: "user", content: text },
-        ],
-      }),
-    });
-
+    // Use MyMemory free translation API (no key needed)
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ko`;
+    const res = await fetch(url);
+    
     if (!res.ok) {
       const errText = await res.text();
-      console.error("AI API error:", res.status, errText);
+      console.error("Translation API error:", res.status, errText);
       return new Response(JSON.stringify({ translation: text }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await res.json();
-    const translation = data.choices?.[0]?.message?.content?.trim() || text;
+    const translation = data.responseData?.translatedText || text;
 
     return new Response(JSON.stringify({ translation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
