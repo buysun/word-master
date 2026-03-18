@@ -37,19 +37,21 @@ export async function lookupWord(word: string): Promise<WordData> {
     exampleSentence = `I learned the word "${word}" today.`;
   }
 
-  // Translate definition to Korean
+  // Translate definition to Korean & get simple example sentence
   let koreanDef = definition;
+  let simpleExample = exampleSentence;
   try {
     const { data } = await supabase.functions.invoke("translate", {
       body: { text: definition, word: entry.word },
     });
     if (data?.translation) koreanDef = data.translation;
+    if (data?.example) simpleExample = data.example;
   } catch {}
 
   return {
     word: entry.word,
     phonetic,
     definition: koreanDef,
-    exampleSentence,
+    exampleSentence: simpleExample,
   };
 }
