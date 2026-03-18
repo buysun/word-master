@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 
 interface WordCardProps {
   word: string;
+  phonetic?: string;
   definition: string;
   exampleSentence: string;
 }
