@@ -45,6 +45,7 @@ export default function Index() {
         .from("searched_words")
         .insert({
           word: result.word,
+          phonetic: result.phonetic,
           definition: result.definition,
           example_sentence: result.exampleSentence,
           user_cookie: cookie,
