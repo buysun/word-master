@@ -207,7 +207,7 @@ export default function Index() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="container flex items-center justify-between py-3">
-          <h1 className="font-display text-xl font-bold text-primary">Word Master</h1>
+          <h1 className="font-display text-xl font-bold text-primary">Word Master - Shoo</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={() => setQuizSetupOpen(true)}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
