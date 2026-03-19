@@ -136,6 +136,10 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
         [resultValue === 1 ? "first" : "second"]: prev[resultValue === 1 ? "first" : "second"] + 1,
       }));
       recordResult(currentQ.correctWord.id, resultValue);
+      // Auto-advance after 1.2s on correct answer
+      setTimeout(() => {
+        handleNext();
+      }, 1200);
     } else {
       if (attempts >= 1) {
         // Second wrong - show correct answer

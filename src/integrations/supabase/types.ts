@@ -56,6 +56,7 @@ export type Database = {
           id: string
           phonetic: string | null
           searched_at: string
+          seq_no: number
           user_cookie: string
           word: string
         }
@@ -65,6 +66,7 @@ export type Database = {
           id?: string
           phonetic?: string | null
           searched_at?: string
+          seq_no?: number
           user_cookie: string
           word: string
         }
@@ -74,6 +76,7 @@ export type Database = {
           id?: string
           phonetic?: string | null
           searched_at?: string
+          seq_no?: number
           user_cookie?: string
           word?: string
         }
