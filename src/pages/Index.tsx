@@ -249,6 +249,8 @@ export default function Index() {
               selected={selectedDate}
               onSelect={handleDateSelect}
               initialFocus
+              modifiers={{ hasWords: datesWithWords }}
+              modifiersStyles={{ hasWords: { color: "hsl(0 84% 60%)", fontWeight: 700 } }}
               className={cn("p-3 pointer-events-auto")}
             />
           </PopoverContent>
