@@ -38,6 +38,11 @@ export default function Index() {
 
   const cookie = getUserCookie();
 
+  // Dates that have searched words
+  const datesWithWords = Array.from(
+    new Set(allWords.map((w) => getKSTDateString(new Date(w.searched_at))))
+  ).map((d) => new Date(d + "T00:00:00"));
+
   const loadAllWords = useCallback(async () => {
     const { data } = await supabase
       .from("searched_words")
