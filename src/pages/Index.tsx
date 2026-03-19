@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Zap } from "lucide-react";
+import { BookOpen, Zap, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import SearchBar from "@/components/SearchBar";
 import WordCard from "@/components/WordCard";
 import QuizSetupModal from "@/components/QuizSetupModal";
@@ -11,51 +15,115 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+function getKSTDateString(date: Date): string {
+  // Format as YYYY-MM-DD in KST
+  const kst = new Date(date.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  return format(kst, "yyyy-MM-dd");
+}
+
+function getTodayKST(): string {
+  return getKSTDateString(new Date());
+}
 
 export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
-  const [cards, setCards] = useState<Tables<"searched_words">[]>([]);
+  const [cards, setCards] = useState<(Tables<"searched_words"> & { seq_no?: number })[]>([]);
   const [allWords, setAllWords] = useState<Tables<"searched_words">[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
-  const [quiz2SetupOpen, setQuiz2SetupOpen] = useState(false);
   const [quizWords, setQuizWords] = useState<Tables<"searched_words">[] | null>(null);
   const [quizType, setQuizType] = useState("quiz1");
 
   const cookie = getUserCookie();
 
-  const loadWords = useCallback(async () => {
-    const { data } = await supabase.
-    from("searched_words").
-    select("*").
-    eq("user_cookie", cookie).
-    order("searched_at", { ascending: false });
-    if (data) {
-      setAllWords(data);
-      setCards(data);
-    }
+  const loadAllWords = useCallback(async () => {
+    const { data } = await supabase
+      .from("searched_words")
+      .select("*")
+      .eq("user_cookie", cookie)
+      .order("searched_at", { ascending: false });
+    if (data) setAllWords(data);
   }, [cookie]);
 
-  useEffect(() => {loadWords();}, [loadWords]);
+  const loadWordsByDate = useCallback(async (date: Date) => {
+    const dateStr = getKSTDateString(date);
+    const startOfDay = `${dateStr}T00:00:00+09:00`;
+    const endOfDay = `${dateStr}T23:59:59+09:00`;
+
+    const { data } = await supabase
+      .from("searched_words")
+      .select("*")
+      .eq("user_cookie", cookie)
+      .gte("searched_at", startOfDay)
+      .lte("searched_at", endOfDay)
+      .order("searched_at", { ascending: false });
+
+    if (data) setCards(data as any);
+  }, [cookie]);
+
+  // Initial load: all words + today's words
+  useEffect(() => {
+    loadAllWords();
+  }, [loadAllWords]);
+
+  useEffect(() => {
+    if (selectedDate) loadWordsByDate(selectedDate);
+  }, [selectedDate, loadWordsByDate]);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+  };
 
   const handleSearch = async (word: string) => {
     setIsLoading(true);
     try {
+      // Check if word was already searched today
+      const todayStr = getTodayKST();
+      const startOfDay = `${todayStr}T00:00:00+09:00`;
+      const endOfDay = `${todayStr}T23:59:59+09:00`;
+
+      const { data: existing } = await supabase
+        .from("searched_words")
+        .select("*")
+        .eq("user_cookie", cookie)
+        .ilike("word", word)
+        .gte("searched_at", startOfDay)
+        .lte("searched_at", endOfDay)
+        .maybeSingle();
+
+      if (existing) {
+        // Already searched today - update timestamp to bring to top
+        await supabase
+          .from("searched_words")
+          .update({ searched_at: new Date().toISOString() })
+          .eq("id", existing.id);
+        toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
+        if (selectedDate) await loadWordsByDate(selectedDate);
+        await loadAllWords();
+        return;
+      }
+
       const result = await lookupWord(word);
-      const { data, error } = await supabase.
-      from("searched_words").
-      insert({
-        word: result.word,
-        phonetic: result.phonetic,
-        definition: result.definition,
-        example_sentence: result.exampleSentence,
-        user_cookie: cookie
-      }).
-      select().
-      single();
+      const { data, error } = await supabase
+        .from("searched_words")
+        .insert({
+          word: result.word,
+          phonetic: result.phonetic,
+          definition: result.definition,
+          example_sentence: result.exampleSentence,
+          user_cookie: cookie,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       if (data) {
-        setCards((prev) => [data, ...prev]);
+        // If viewing today, add to cards
+        if (selectedDate && getKSTDateString(selectedDate) === todayStr) {
+          setCards((prev) => [data as any, ...prev]);
+        }
         setAllWords((prev) => [data, ...prev]);
       }
     } catch (err: any) {
@@ -63,6 +131,17 @@ export default function Index() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("searched_words").delete().eq("id", id);
+    if (error) {
+      toast.error("삭제에 실패했습니다.");
+      return;
+    }
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    setAllWords((prev) => prev.filter((w) => w.id !== id));
+    toast.success("단어가 삭제되었습니다.");
   };
 
   const handleQuiz1Start = (wordIds: string[]) => {
@@ -77,13 +156,11 @@ export default function Index() {
   };
 
   const handleQuiz2Start = async () => {
-    setQuiz2SetupOpen(false);
-    // Get words that were NOT answered correctly on first try
-    const { data: results } = await supabase.
-    from("quiz_results").
-    select("word_id").
-    eq("user_cookie", cookie).
-    neq("result", 1);
+    const { data: results } = await supabase
+      .from("quiz_results")
+      .select("word_id")
+      .eq("user_cookie", cookie)
+      .neq("result", 1);
 
     if (!results || results.length === 0) {
       toast.info("틀린 단어가 없습니다! 🎉");
@@ -98,7 +175,6 @@ export default function Index() {
       return;
     }
 
-    // Random 30
     if (failedWords.length > 30) {
       failedWords = [...failedWords].sort(() => Math.random() - 0.5).slice(0, 30);
     }
@@ -112,9 +188,13 @@ export default function Index() {
       <QuizScreen
         words={quizWords}
         quizType={quizType}
-        onFinish={() => {setQuizWords(null);loadWords();}} />);
-
-
+        onFinish={() => {
+          setQuizWords(null);
+          loadAllWords();
+          if (selectedDate) loadWordsByDate(selectedDate);
+        }}
+      />
+    );
   }
 
   return (
@@ -124,20 +204,10 @@ export default function Index() {
         <div className="container flex items-center justify-between py-3">
           <h1 className="font-display text-xl font-bold text-primary">Word Master</h1>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="font-display text-xs"
-              onClick={() => setQuizSetupOpen(true)}>
-              
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={() => setQuizSetupOpen(true)}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="font-display text-xs"
-              onClick={handleQuiz2Start}>
-              
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz2Start}>
               <Zap className="h-3.5 w-3.5 mr-1" /> 퀴즈2
             </Button>
           </div>
@@ -146,44 +216,68 @@ export default function Index() {
 
       {/* Search section */}
       <div className="container py-8 space-y-2">
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-6">
-          
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-6">
           <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-1">영어 단어 검색</h2>
           <p className="font-body text-sm text-muted-foreground">단어를 검색하세요</p>
         </motion.div>
-
         <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+      </div>
+
+      {/* Date picker */}
+      <div className="container pb-4 flex justify-center">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className={cn(
+                "w-[220px] justify-start text-left font-body",
+                !selectedDate && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {selectedDate ? format(selectedDate, "yyyy년 M월 d일", { locale: ko }) : "날짜 선택"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
 
       {/* Cards */}
       <div className="container pb-8 space-y-3">
-        {cards.map((card) =>
-        <WordCard
-          key={card.id}
-          word={card.word}
-          phonetic={(card as any).phonetic || ''}
-          definition={card.definition}
-          exampleSentence={card.example_sentence} />
-
-        )}
-        {cards.length === 0 &&
-        <p className="text-center text-sm text-muted-foreground font-body py-12">
-            검색한 단어가 여기에 표시됩니다 📚
+        {cards.map((card) => (
+          <WordCard
+            key={card.id}
+            word={card.word}
+            phonetic={card.phonetic || ""}
+            definition={card.definition}
+            exampleSentence={card.example_sentence}
+            seqNo={(card as any).seq_no}
+            onDelete={() => handleDelete(card.id)}
+          />
+        ))}
+        {cards.length === 0 && (
+          <p className="text-center text-sm text-muted-foreground font-body py-12">
+            {selectedDate ? `${format(selectedDate, "M월 d일", { locale: ko })}에 검색한 단어가 없습니다` : "검색한 단어가 여기에 표시됩니다 📚"}
           </p>
-        }
+        )}
       </div>
 
-      {/* Quiz Setup Modals */}
+      {/* Quiz Setup Modal */}
       <QuizSetupModal
         open={quizSetupOpen}
         onClose={() => setQuizSetupOpen(false)}
         words={allWords}
         onStart={handleQuiz1Start}
-        title="퀴즈 1 - 단어 복습" />
-      
-    </div>);
-
+        title="퀴즈 1 - 단어 복습"
+      />
+    </div>
+  );
 }
