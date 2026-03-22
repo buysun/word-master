@@ -207,7 +207,7 @@ export default function Index() {
         <div className="container flex items-center justify-between py-3">
           <h1 className="font-display text-xl font-bold text-primary">Word Master - Wook</h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="font-display text-xs" onClick={() => setQuizSetupOpen(true)}>
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
             </Button>
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz2Start}>
