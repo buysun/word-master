@@ -21,6 +21,7 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
       <Input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => setQuery("")}
         placeholder="영어 단어를 입력하세요..."
         className="font-body text-base h-12 rounded-lg"
         autoFocus

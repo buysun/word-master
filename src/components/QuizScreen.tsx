@@ -138,6 +138,10 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
       recordResult(currentQ.correctWord.id, resultValue);
       // Auto-advance after 1.2s on correct answer
       setTimeout(() => {
+        setSelected(null);
+        setShowResult(false);
+        setIsCorrect(false);
+        setAttempts(0);
         handleNext();
       }, 1200);
     } else {
