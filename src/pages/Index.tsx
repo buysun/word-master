@@ -149,15 +149,13 @@ export default function Index() {
     toast.success("단어가 삭제되었습니다.");
   };
 
-  const handleQuiz1Start = (wordIds: string[]) => {
-    setQuizSetupOpen(false);
-    const selected = allWords.filter((w) => wordIds.includes(w.id));
-    if (selected.length < 2) {
+  const handleQuiz1Start = () => {
+    if (cards.length < 2) {
       toast.error("최소 2개 이상의 단어가 필요합니다.");
       return;
     }
     setQuizType("quiz1");
-    setQuizWords(selected);
+    setQuizWords([...cards]);
   };
 
   const handleQuiz2Start = async () => {
