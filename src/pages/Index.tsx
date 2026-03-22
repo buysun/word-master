@@ -149,15 +149,13 @@ export default function Index() {
     toast.success("단어가 삭제되었습니다.");
   };
 
-  const handleQuiz1Start = (wordIds: string[]) => {
-    setQuizSetupOpen(false);
-    const selected = allWords.filter((w) => wordIds.includes(w.id));
-    if (selected.length < 2) {
+  const handleQuiz1Start = () => {
+    if (cards.length < 2) {
       toast.error("최소 2개 이상의 단어가 필요합니다.");
       return;
     }
     setQuizType("quiz1");
-    setQuizWords(selected);
+    setQuizWords([...cards]);
   };
 
   const handleQuiz2Start = async () => {
@@ -209,7 +207,7 @@ export default function Index() {
         <div className="container flex items-center justify-between py-3">
           <h1 className="font-display text-xl font-bold text-primary">Word Master - Wook</h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="font-display text-xs" onClick={() => setQuizSetupOpen(true)}>
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
             </Button>
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz2Start}>
