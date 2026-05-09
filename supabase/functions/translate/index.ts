@@ -35,22 +35,24 @@ serve(async (req) => {
 
     const systemPrompt = phraseMode
       ? `You are a Korean-English dictionary editor for Korean students. The input is an English word, idiom, or phrase. Respond with ONLY a JSON object:
-{"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
+{"translation":"한국어 뜻1, 한국어 뜻2","example":"very easy English sentence","exampleTranslation":"예문 한국어 번역"}
 
 Rules:
 - translation: provide the main Korean meaning(s) of the given English expression, comma-separated, in Korean only, no numbering, no explanation.
 - Include all major meanings if there are several.
-- example: write one natural English sentence using the given expression, very simple and short (max 8 words), using only basic vocabulary suitable for a Korean elementary school student (around 4th grade).
+- example: write one natural English sentence using the given expression. It MUST be extremely simple and very short (max 6 words), using only the most basic vocabulary that a Korean 1st-2nd grade elementary school student can understand.
+- exampleTranslation: provide a natural Korean translation of the example sentence.
 - Output JSON only.`
       : `You are a Korean-English dictionary editor for Korean students. Respond with ONLY a JSON object:
-{"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
+{"translation":"한국어 뜻1, 한국어 뜻2","example":"very easy English sentence","exampleTranslation":"예문 한국어 번역"}
 
 Rules:
 - Select only the meanings that truly belong to the target word.
 - Ignore unrelated, noisy, or mistaken definitions.
 - translation: output the main Korean dictionary meanings only, comma-separated, in Korean only, with no numbering and no explanation.
 - Include all major meanings if there are several.
-- example: write one natural English sentence using the target word, very simple and short (max 8 words), using only basic vocabulary suitable for a Korean elementary school student (around 4th grade).
+- example: write one natural English sentence using the target word. It MUST be extremely simple and very short (max 6 words), using only the most basic vocabulary that a Korean 1st-2nd grade elementary school student can understand.
+- exampleTranslation: provide a natural Korean translation of the example sentence.
 - Output JSON only.`;
 
     const userContent = phraseMode
