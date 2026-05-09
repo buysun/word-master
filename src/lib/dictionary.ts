@@ -31,11 +31,13 @@ async function lookupPhrase(phrase: string): Promise<WordData> {
     throw new Error(translated?.error || "뜻을 찾을 수 없습니다.");
   }
 
+  const ex = translated.example || getFallbackExample(phrase);
+  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: phrase,
     phonetic: "",
     definition: translated.translation,
-    exampleSentence: translated.example || getFallbackExample(phrase),
+    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
   };
 }
 
