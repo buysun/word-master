@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Zap, CalendarIcon } from "lucide-react";
+import { BookOpen, FileText, CalendarIcon, Loader2, Volume2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SearchBar from "@/components/SearchBar";
 import WordCard from "@/components/WordCard";
 import QuizSetupModal from "@/components/QuizSetupModal";
 import QuizScreen from "@/components/QuizScreen";
 import { lookupWord } from "@/lib/dictionary";
 import { getUserCookie } from "@/lib/cookie";
+import { speak } from "@/lib/speech";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -35,6 +37,9 @@ export default function Index() {
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
   const [quizWords, setQuizWords] = useState<Tables<"searched_words">[] | null>(null);
   const [quizType, setQuizType] = useState("quiz1");
+  const [paragraphOpen, setParagraphOpen] = useState(false);
+  const [paragraphLoading, setParagraphLoading] = useState(false);
+  const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
 
   const cookie = getUserCookie();
 
@@ -158,32 +163,27 @@ export default function Index() {
     setQuizWords([...cards]);
   };
 
-  const handleQuiz2Start = async () => {
-    const { data: results } = await supabase
-      .from("quiz_results")
-      .select("word_id")
-      .eq("user_cookie", cookie)
-      .neq("result", 1);
-
-    if (!results || results.length === 0) {
-      toast.info("틀린 단어가 없습니다! 🎉");
+  const handleParagraphStart = async () => {
+    if (cards.length === 0) {
+      toast.error("선택한 날짜에 검색한 단어가 없습니다.");
       return;
     }
-
-    const failedWordIds = new Set(results.map((r) => r.word_id));
-    let failedWords = allWords.filter((w) => failedWordIds.has(w.id));
-
-    if (failedWords.length < 2) {
-      toast.error("최소 2개 이상의 단어가 필요합니다.");
-      return;
+    setParagraphOpen(true);
+    setParagraphLoading(true);
+    setParagraphData(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("paragraph", {
+        body: { words: cards.map((c) => c.word) },
+      });
+      if (error) throw error;
+      if (!data?.paragraph) throw new Error(data?.error || "문단을 생성하지 못했습니다.");
+      setParagraphData({ paragraph: data.paragraph, translation: data.translation || "" });
+    } catch (err: any) {
+      toast.error(err.message || "문단 생성에 실패했습니다.");
+      setParagraphOpen(false);
+    } finally {
+      setParagraphLoading(false);
     }
-
-    if (failedWords.length > 30) {
-      failedWords = [...failedWords].sort(() => Math.random() - 0.5).slice(0, 30);
-    }
-
-    setQuizType("quiz2");
-    setQuizWords(failedWords);
   };
 
   if (quizWords) {
@@ -210,8 +210,8 @@ export default function Index() {
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
             </Button>
-            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz2Start}>
-              <Zap className="h-3.5 w-3.5 mr-1" /> 퀴즈2
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleParagraphStart}>
+              <FileText className="h-3.5 w-3.5 mr-1" /> 문단1
             </Button>
           </div>
         </div>
@@ -283,6 +283,54 @@ export default function Index() {
         onStart={handleQuiz1Start}
         title="퀴즈 1 - 단어 복습"
       />
+
+      {/* Paragraph Dialog */}
+      <Dialog open={paragraphOpen} onOpenChange={setParagraphOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {selectedDate ? format(selectedDate, "M월 d일", { locale: ko }) : ""} 단어로 만든 문단
+            </DialogTitle>
+          </DialogHeader>
+          {paragraphLoading && (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="font-body text-sm text-muted-foreground">문단을 만드는 중입니다...</p>
+            </div>
+          )}
+          {paragraphData && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-body text-base text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary shrink-0"
+                    onClick={() => speak(paragraphData.paragraph, false)}
+                    aria-label="Read paragraph"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              {paragraphData.translation && (
+                <div className="bg-card rounded-lg p-4 border border-border">
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{paragraphData.translation}</p>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {cards.map((c) => (
+                  <span key={c.id} className="text-xs font-mono bg-primary/10 text-primary rounded px-2 py-0.5">
+                    {c.word}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
