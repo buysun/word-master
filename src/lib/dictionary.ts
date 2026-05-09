@@ -31,11 +31,13 @@ async function lookupPhrase(phrase: string): Promise<WordData> {
     throw new Error(translated?.error || "뜻을 찾을 수 없습니다.");
   }
 
+  const ex = translated.example || getFallbackExample(phrase);
+  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: phrase,
     phonetic: "",
     definition: translated.translation,
-    exampleSentence: translated.example || getFallbackExample(phrase),
+    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
   };
 }
 
@@ -97,10 +99,12 @@ export async function lookupWord(word: string): Promise<WordData> {
     throw new Error(translated?.error || "번역 결과를 받지 못했습니다.");
   }
 
+  const ex = translated.example || sourceExample;
+  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: entry.word,
     phonetic,
     definition: translated.translation,
-    exampleSentence: translated.example || sourceExample,
+    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
   };
 }
