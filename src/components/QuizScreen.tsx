@@ -7,6 +7,7 @@ import { getUserCookie } from "@/lib/cookie";
 import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import confetti from "canvas-confetti";
+import { playCorrect, playWrong } from "@/lib/sound";
 
 interface QuizScreenProps {
   words: Tables<"searched_words">[];
@@ -130,6 +131,7 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     if (index === currentQ.correctIndex) {
       setIsCorrect(true);
       setShowResult(true);
+      playCorrect();
       const resultValue = attempts === 0 ? 1 : 2;
       setScore(prev => ({
         ...prev,
@@ -149,10 +151,12 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
         // Second wrong - show correct answer
         setIsCorrect(false);
         setShowResult(true);
+        playWrong();
         setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
         recordResult(currentQ.correctWord.id, 3);
       } else {
         // First wrong - shake and allow retry
+        playWrong();
         setShakeIndex(index);
         setAttempts(1);
         setTimeout(() => setShakeIndex(null), 400);
