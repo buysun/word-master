@@ -104,12 +104,13 @@ Rules:
 
     const translation = typeof parsed.translation === "string" ? parsed.translation.trim() : "";
     const example = typeof parsed.example === "string" ? parsed.example.trim() : "";
+    const exampleTranslation = typeof parsed.exampleTranslation === "string" ? parsed.exampleTranslation.trim() : "";
 
     if (!translation) {
       throw new Error("Translation was empty");
     }
 
-    return new Response(JSON.stringify({ translation, example }), {
+    return new Response(JSON.stringify({ translation, example, exampleTranslation }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
