@@ -163,32 +163,27 @@ export default function Index() {
     setQuizWords([...cards]);
   };
 
-  const handleQuiz2Start = async () => {
-    const { data: results } = await supabase
-      .from("quiz_results")
-      .select("word_id")
-      .eq("user_cookie", cookie)
-      .neq("result", 1);
-
-    if (!results || results.length === 0) {
-      toast.info("틀린 단어가 없습니다! 🎉");
+  const handleParagraphStart = async () => {
+    if (cards.length === 0) {
+      toast.error("선택한 날짜에 검색한 단어가 없습니다.");
       return;
     }
-
-    const failedWordIds = new Set(results.map((r) => r.word_id));
-    let failedWords = allWords.filter((w) => failedWordIds.has(w.id));
-
-    if (failedWords.length < 2) {
-      toast.error("최소 2개 이상의 단어가 필요합니다.");
-      return;
+    setParagraphOpen(true);
+    setParagraphLoading(true);
+    setParagraphData(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("paragraph", {
+        body: { words: cards.map((c) => c.word) },
+      });
+      if (error) throw error;
+      if (!data?.paragraph) throw new Error(data?.error || "문단을 생성하지 못했습니다.");
+      setParagraphData({ paragraph: data.paragraph, translation: data.translation || "" });
+    } catch (err: any) {
+      toast.error(err.message || "문단 생성에 실패했습니다.");
+      setParagraphOpen(false);
+    } finally {
+      setParagraphLoading(false);
     }
-
-    if (failedWords.length > 30) {
-      failedWords = [...failedWords].sort(() => Math.random() - 0.5).slice(0, 30);
-    }
-
-    setQuizType("quiz2");
-    setQuizWords(failedWords);
   };
 
   if (quizWords) {
@@ -215,8 +210,8 @@ export default function Index() {
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
             </Button>
-            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz2Start}>
-              <Zap className="h-3.5 w-3.5 mr-1" /> 퀴즈2
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleParagraphStart}>
+              <FileText className="h-3.5 w-3.5 mr-1" /> 문단1
             </Button>
           </div>
         </div>
