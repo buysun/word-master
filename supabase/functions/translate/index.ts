@@ -66,23 +66,8 @@ Rules:
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          {
-            role: "system",
-            content: `You are a Korean-English dictionary editor for Korean students. Respond with ONLY a JSON object:
-{"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
-
-Rules:
-- Select only the meanings that truly belong to the target word.
-- Ignore unrelated, noisy, or mistaken definitions.
-- translation: output the main Korean dictionary meanings only, comma-separated, in Korean only, with no numbering and no explanation.
-- Include all major meanings if there are several.
-- example: write one natural English sentence using the target word, easy enough for a Korean 9th-grade student.
-- Output JSON only.`
-          },
-          {
-            role: "user",
-            content: `Word: ${word}\nCandidate definitions:\n${candidateDefinitions.map((definition, index) => `${index + 1}. ${definition}`).join("\n")}`
-          }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent }
         ],
         temperature: 0.2,
         max_tokens: 220,
