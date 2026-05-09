@@ -40,7 +40,7 @@ serve(async (req) => {
 Rules:
 - translation: provide the main Korean meaning(s) of the given English expression, comma-separated, in Korean only, no numbering, no explanation.
 - Include all major meanings if there are several.
-- example: write one natural English sentence using the given expression, easy enough for a Korean 9th-grade student.
+- example: write one natural English sentence using the given expression, very simple and short (max 8 words), using only basic vocabulary suitable for a Korean elementary school student (around 4th grade).
 - Output JSON only.`
       : `You are a Korean-English dictionary editor for Korean students. Respond with ONLY a JSON object:
 {"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
@@ -50,7 +50,7 @@ Rules:
 - Ignore unrelated, noisy, or mistaken definitions.
 - translation: output the main Korean dictionary meanings only, comma-separated, in Korean only, with no numbering and no explanation.
 - Include all major meanings if there are several.
-- example: write one natural English sentence using the target word, easy enough for a Korean 9th-grade student.
+- example: write one natural English sentence using the target word, very simple and short (max 8 words), using only basic vocabulary suitable for a Korean elementary school student (around 4th grade).
 - Output JSON only.`;
 
     const userContent = phraseMode
