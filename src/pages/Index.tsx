@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, Zap, CalendarIcon } from "lucide-react";
+import { BookOpen, FileText, CalendarIcon, Loader2, Volume2 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import SearchBar from "@/components/SearchBar";
 import WordCard from "@/components/WordCard";
 import QuizSetupModal from "@/components/QuizSetupModal";
 import QuizScreen from "@/components/QuizScreen";
 import { lookupWord } from "@/lib/dictionary";
 import { getUserCookie } from "@/lib/cookie";
+import { speak } from "@/lib/speech";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -35,6 +37,9 @@ export default function Index() {
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
   const [quizWords, setQuizWords] = useState<Tables<"searched_words">[] | null>(null);
   const [quizType, setQuizType] = useState("quiz1");
+  const [paragraphOpen, setParagraphOpen] = useState(false);
+  const [paragraphLoading, setParagraphLoading] = useState(false);
+  const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
 
   const cookie = getUserCookie();
 
