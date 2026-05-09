@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, word, definitions } = await req.json();
+    const { text, word, definitions, isPhrase } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -24,12 +24,38 @@ serve(async (req) => {
         ? [text.trim()]
         : [];
 
-    if (!word || candidateDefinitions.length === 0) {
-      return new Response(JSON.stringify({ error: "word and definitions are required", translation: null, example: null }), {
+    if (!word) {
+      return new Response(JSON.stringify({ error: "word is required", translation: null, example: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
+
+    const phraseMode = isPhrase === true || candidateDefinitions.length === 0;
+
+    const systemPrompt = phraseMode
+      ? `You are a Korean-English dictionary editor for Korean students. The input is an English word, idiom, or phrase. Respond with ONLY a JSON object:
+{"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
+
+Rules:
+- translation: provide the main Korean meaning(s) of the given English expression, comma-separated, in Korean only, no numbering, no explanation.
+- Include all major meanings if there are several.
+- example: write one natural English sentence using the given expression, easy enough for a Korean 9th-grade student.
+- Output JSON only.`
+      : `You are a Korean-English dictionary editor for Korean students. Respond with ONLY a JSON object:
+{"translation":"한국어 뜻1, 한국어 뜻2","example":"easy English sentence"}
+
+Rules:
+- Select only the meanings that truly belong to the target word.
+- Ignore unrelated, noisy, or mistaken definitions.
+- translation: output the main Korean dictionary meanings only, comma-separated, in Korean only, with no numbering and no explanation.
+- Include all major meanings if there are several.
+- example: write one natural English sentence using the target word, easy enough for a Korean 9th-grade student.
+- Output JSON only.`;
+
+    const userContent = phraseMode
+      ? `Expression: ${word}`
+      : `Word: ${word}\nCandidate definitions:\n${candidateDefinitions.map((definition, index) => `${index + 1}. ${definition}`).join("\n")}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

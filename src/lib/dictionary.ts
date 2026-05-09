@@ -8,12 +8,50 @@ export interface WordData {
 }
 
 function getFallbackExample(word: string) {
-  return `I use the word "${word}" in my English study.`;
+  return `I use "${word}" in my English study.`;
+}
+
+async function lookupPhrase(phrase: string): Promise<WordData> {
+  // Idiom / multi-word lookup: skip dictionaryapi.dev, ask AI directly
+  const { data: translated, error } = await supabase.functions.invoke("translate", {
+    body: {
+      word: phrase,
+      isPhrase: true,
+    },
+  });
+
+  if (error) {
+    const status = (error as any)?.context?.status;
+    if (status === 429) throw new Error("번역 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+    if (status === 402) throw new Error("AI 사용량 한도에 도달했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("번역 기능에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+  }
+
+  if (!translated?.translation) {
+    throw new Error(translated?.error || "뜻을 찾을 수 없습니다.");
+  }
+
+  return {
+    word: phrase,
+    phonetic: "",
+    definition: translated.translation,
+    exampleSentence: translated.example || getFallbackExample(phrase),
+  };
 }
 
 export async function lookupWord(word: string): Promise<WordData> {
-  const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word.trim().toLowerCase())}`);
-  if (!res.ok) throw new Error("단어를 찾을 수 없습니다.");
+  const trimmed = word.trim().toLowerCase();
+
+  // Detect idiom / phrase (contains whitespace)
+  if (/\s/.test(trimmed)) {
+    return lookupPhrase(trimmed);
+  }
+
+  const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(trimmed)}`);
+  if (!res.ok) {
+    // Fallback to AI phrase lookup if not found in dictionary
+    return lookupPhrase(trimmed);
+  }
 
   const data = await res.json();
   const entry = data[0];
@@ -37,7 +75,7 @@ export async function lookupWord(word: string): Promise<WordData> {
       .find((def: any) => typeof def.example === "string" && def.example.trim())?.example || getFallbackExample(entry.word);
 
   if (candidateDefinitions.length === 0) {
-    throw new Error("뜻 정보를 찾을 수 없습니다.");
+    return lookupPhrase(trimmed);
   }
 
   const { data: translated, error } = await supabase.functions.invoke("translate", {
