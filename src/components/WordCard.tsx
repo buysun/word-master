@@ -76,16 +76,7 @@ export default function WordCard({ word, phonetic, definition, exampleSentence, 
           </div>
         </div>
         <p className="font-body text-sm text-muted-foreground mb-2">{definition}</p>
-        {(() => {
-          const [exEn, ...rest] = exampleSentence.split("\n");
-          const exKo = rest.join(" ").trim();
-          return (
-            <>
-              <p className="font-body text-sm text-foreground/80 italic">"{exEn}"</p>
-              {exKo && <p className="font-body text-sm text-muted-foreground mt-1">{exKo}</p>}
-            </>
-          );
-        })()}
+        <p className="font-body text-sm text-foreground/80 italic">"{exampleSentence.split("\n")[0]}"</p>
       </motion.div>
     </div>
   );

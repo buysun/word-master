@@ -32,12 +32,11 @@ async function lookupPhrase(phrase: string): Promise<WordData> {
   }
 
   const ex = translated.example || getFallbackExample(phrase);
-  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: phrase,
     phonetic: "",
     definition: translated.translation,
-    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
+    exampleSentence: ex,
   };
 }
 
@@ -100,11 +99,10 @@ export async function lookupWord(word: string): Promise<WordData> {
   }
 
   const ex = translated.example || sourceExample;
-  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: entry.word,
     phonetic,
     definition: translated.translation,
-    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
+    exampleSentence: ex,
   };
 }
