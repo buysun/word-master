@@ -283,6 +283,54 @@ export default function Index() {
         onStart={handleQuiz1Start}
         title="퀴즈 1 - 단어 복습"
       />
+
+      {/* Paragraph Dialog */}
+      <Dialog open={paragraphOpen} onOpenChange={setParagraphOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              {selectedDate ? format(selectedDate, "M월 d일", { locale: ko }) : ""} 단어로 만든 문단
+            </DialogTitle>
+          </DialogHeader>
+          {paragraphLoading && (
+            <div className="flex flex-col items-center justify-center py-10 gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="font-body text-sm text-muted-foreground">문단을 만드는 중입니다...</p>
+            </div>
+          )}
+          {paragraphData && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-body text-base text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-primary shrink-0"
+                    onClick={() => speak(paragraphData.paragraph, false)}
+                    aria-label="Read paragraph"
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              {paragraphData.translation && (
+                <div className="bg-card rounded-lg p-4 border border-border">
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{paragraphData.translation}</p>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {cards.map((c) => (
+                  <span key={c.id} className="text-xs font-mono bg-primary/10 text-primary rounded px-2 py-0.5">
+                    {c.word}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
