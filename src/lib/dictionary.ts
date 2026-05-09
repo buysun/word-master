@@ -99,10 +99,12 @@ export async function lookupWord(word: string): Promise<WordData> {
     throw new Error(translated?.error || "번역 결과를 받지 못했습니다.");
   }
 
+  const ex = translated.example || sourceExample;
+  const exKo = typeof translated.exampleTranslation === "string" ? translated.exampleTranslation.trim() : "";
   return {
     word: entry.word,
     phonetic,
     definition: translated.translation,
-    exampleSentence: translated.example || sourceExample,
+    exampleSentence: exKo ? `${ex}\n${exKo}` : ex,
   };
 }
