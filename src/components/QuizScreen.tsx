@@ -158,6 +158,8 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
         [resultValue === 1 ? "first" : "second"]: prev[resultValue === 1 ? "first" : "second"] + 1,
       }));
       recordResult(currentQ.correctWord.id, resultValue);
+      // Score: only +2 if got it right on first try
+      if (resultValue === 1) updateScore(2);
       // Auto-advance after 1.2s on correct answer
       setTimeout(() => {
         setSelected(null);
@@ -176,11 +178,12 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
         recordResult(currentQ.correctWord.id, 3);
         markWrong(currentQ.correctWord);
       } else {
-        // First wrong - shake and allow retry
+        // First wrong - shake and allow retry, count -1 once
         playWrong();
         setShakeIndex(index);
         setAttempts(1);
         markWrong(currentQ.correctWord);
+        updateScore(-1);
         setTimeout(() => setShakeIndex(null), 400);
       }
     }
@@ -193,6 +196,7 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
     recordResult(currentQ.correctWord.id, 3);
     markWrong(currentQ.correctWord);
+    updateScore(-1);
   };
 
   const handleNext = () => {
