@@ -166,11 +166,13 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
         playWrong();
         setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
         recordResult(currentQ.correctWord.id, 3);
+        markWrong(currentQ.correctWord);
       } else {
         // First wrong - shake and allow retry
         playWrong();
         setShakeIndex(index);
         setAttempts(1);
+        markWrong(currentQ.correctWord);
         setTimeout(() => setShakeIndex(null), 400);
       }
     }
@@ -182,6 +184,7 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     setSelected(currentQ.correctIndex);
     setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
     recordResult(currentQ.correctWord.id, 3);
+    markWrong(currentQ.correctWord);
   };
 
   const handleNext = () => {
