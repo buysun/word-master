@@ -112,6 +112,14 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     });
   }, []);
 
+  const updateScore = useCallback(async (delta: number) => {
+    try {
+      await supabase.rpc("add_to_score", { delta });
+    } catch (e) {
+      // ignore (anon users)
+    }
+  }, []);
+
   const currentQ = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0;
 
