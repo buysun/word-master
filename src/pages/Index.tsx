@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, FileText, CalendarIcon, Loader2, Volume2 } from "lucide-react";
+import { BookOpen, FileText, CalendarIcon, Loader2, Volume2, Pen, Coins, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import LoginDialog from "@/components/LoginDialog";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -41,8 +43,12 @@ export default function Index() {
   const [paragraphLoading, setParagraphLoading] = useState(false);
   const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [score, setScore] = useState<number>(0);
+  const [wordCount, setWordCount] = useState<number>(0);
 
-  const cookie = getUserCookie();
+  const { user, signOut } = useAuth();
+  const cookie = user?.id ?? getUserCookie();
 
   // Dates that have searched words
   const datesWithWords = Array.from(
@@ -74,10 +80,30 @@ export default function Index() {
     if (data) setCards(data as any);
   }, [cookie]);
 
+  const loadStats = useCallback(async () => {
+    if (!user) {
+      setScore(0);
+      setWordCount(0);
+      return;
+    }
+    const { count } = await supabase
+      .from("searched_words")
+      .select("*", { count: "exact", head: true })
+      .eq("user_cookie", user.id);
+    setWordCount(count ?? 0);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("score")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setScore(profile?.score ?? 0);
+  }, [user]);
+
   // Initial load: all words + today's words
   useEffect(() => {
     loadAllWords();
-  }, [loadAllWords]);
+    loadStats();
+  }, [loadAllWords, loadStats]);
 
   useEffect(() => {
     if (selectedDate) loadWordsByDate(selectedDate);
@@ -88,6 +114,10 @@ export default function Index() {
   };
 
   const handleSearch = async (word: string) => {
+    if (!user) {
+      setLoginOpen(true);
+      return;
+    }
     setIsLoading(true);
     try {
       // Check if word was already searched today
