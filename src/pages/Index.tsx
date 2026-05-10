@@ -231,6 +231,7 @@ export default function Index() {
         onFinish={() => {
           setQuizWords(null);
           loadAllWords();
+          loadStats();
           if (selectedDate) loadWordsByDate(selectedDate);
         }}
       />
