@@ -112,6 +112,8 @@ export default function Index() {
         toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
         if (selectedDate) await loadWordsByDate(selectedDate);
         await loadAllWords();
+        speak(existing.word, true);
+        setTimeout(() => speak(existing.word, true), 2000);
         return;
       }
 
