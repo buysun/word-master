@@ -177,6 +177,7 @@ export default function Index() {
     setParagraphOpen(true);
     setParagraphLoading(true);
     setParagraphData(null);
+    setShowTranslation(false);
     try {
       const { data, error } = await supabase.functions.invoke("paragraph", {
         body: { words: cards.map((c) => c.word) },
