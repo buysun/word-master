@@ -323,8 +323,31 @@ export default function Index() {
                 </div>
               </div>
               {paragraphData.translation && (
-                <div className="bg-card rounded-lg p-4 border border-border">
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{paragraphData.translation}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-body text-xs font-semibold text-muted-foreground">한국어 번역</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs font-body"
+                      onClick={() => setShowTranslation((v) => !v)}
+                    >
+                      {showTranslation ? "번역 가리기" : "번역 보기"}
+                    </Button>
+                  </div>
+                  <div
+                    className="bg-card rounded-lg p-4 border border-border cursor-pointer"
+                    onClick={() => !showTranslation && setShowTranslation(true)}
+                  >
+                    <p
+                      className={cn(
+                        "font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
+                        !showTranslation && "blur-md"
+                      )}
+                    >
+                      {paragraphData.translation}
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="flex flex-wrap gap-1.5">
