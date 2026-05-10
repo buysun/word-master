@@ -40,6 +40,7 @@ export default function Index() {
   const [paragraphOpen, setParagraphOpen] = useState(false);
   const [paragraphLoading, setParagraphLoading] = useState(false);
   const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const cookie = getUserCookie();
 
