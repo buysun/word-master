@@ -208,10 +208,10 @@ export default function Index() {
           <h1 className="font-display text-xl font-bold text-primary">Word Master - Wook</h1>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
-              <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈1
+              <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈
             </Button>
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleParagraphStart}>
-              <FileText className="h-3.5 w-3.5 mr-1" /> 문단1
+              <FileText className="h-3.5 w-3.5 mr-1" /> 문단
             </Button>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function Index() {
         onClose={() => setQuizSetupOpen(false)}
         words={allWords}
         onStart={handleQuiz1Start}
-        title="퀴즈 1 - 단어 복습"
+        title="퀴즈 - 단어 복습"
       />
 
       {/* Paragraph Dialog */}
