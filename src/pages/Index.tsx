@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, FileText, CalendarIcon, Loader2, Volume2 } from "lucide-react";
+import { BookOpen, FileText, CalendarIcon, Loader2, Volume2, Pen, Coins, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import LoginDialog from "@/components/LoginDialog";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -41,8 +43,12 @@ export default function Index() {
   const [paragraphLoading, setParagraphLoading] = useState(false);
   const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [score, setScore] = useState<number>(0);
+  const [wordCount, setWordCount] = useState<number>(0);
 
-  const cookie = getUserCookie();
+  const { user, signOut } = useAuth();
+  const cookie = user?.id ?? getUserCookie();
 
   // Dates that have searched words
   const datesWithWords = Array.from(
@@ -74,10 +80,30 @@ export default function Index() {
     if (data) setCards(data as any);
   }, [cookie]);
 
+  const loadStats = useCallback(async () => {
+    if (!user) {
+      setScore(0);
+      setWordCount(0);
+      return;
+    }
+    const { count } = await supabase
+      .from("searched_words")
+      .select("*", { count: "exact", head: true })
+      .eq("user_cookie", user.id);
+    setWordCount(count ?? 0);
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("score")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    setScore(profile?.score ?? 0);
+  }, [user]);
+
   // Initial load: all words + today's words
   useEffect(() => {
     loadAllWords();
-  }, [loadAllWords]);
+    loadStats();
+  }, [loadAllWords, loadStats]);
 
   useEffect(() => {
     if (selectedDate) loadWordsByDate(selectedDate);
@@ -88,6 +114,10 @@ export default function Index() {
   };
 
   const handleSearch = async (word: string) => {
+    if (!user) {
+      setLoginOpen(true);
+      return;
+    }
     setIsLoading(true);
     try {
       // Check if word was already searched today
@@ -201,6 +231,7 @@ export default function Index() {
         onFinish={() => {
           setQuizWords(null);
           loadAllWords();
+          loadStats();
           if (selectedDate) loadWordsByDate(selectedDate);
         }}
       />
@@ -211,18 +242,41 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border">
-        <div className="container flex items-center justify-between py-3">
-          <h1 className="font-display text-xl font-bold text-primary">Word Master - Wook</h1>
-          <div className="flex gap-2">
+        <div className="container flex items-center justify-between py-3 gap-2">
+          <h1 className="font-display text-xl font-bold text-primary shrink-0">Word Master</h1>
+          <div className="flex items-center gap-1.5 flex-wrap justify-end">
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleQuiz1Start}>
               <BookOpen className="h-3.5 w-3.5 mr-1" /> 퀴즈
             </Button>
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleParagraphStart}>
               <FileText className="h-3.5 w-3.5 mr-1" /> 문단
             </Button>
+            {user ? (
+              <>
+                <span className="inline-flex items-center gap-1 text-xs font-display bg-primary/10 text-primary rounded-md px-2 py-1" title="공부한 단어 수">
+                  <Pen className="h-3.5 w-3.5" /> {wordCount}
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-display bg-amber-100 text-amber-700 rounded-md px-2 py-1" title="내 점수">
+                  <Coins className="h-3.5 w-3.5" /> {score}
+                </span>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={signOut} title="로그아웃">
+                  <LogOut className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="default" size="sm" className="font-display text-xs" onClick={() => setLoginOpen(true)}>
+                로그인
+              </Button>
+            )}
           </div>
         </div>
       </header>
+
+      <LoginDialog
+        open={loginOpen}
+        onOpenChange={setLoginOpen}
+        message="영어 단어를 검색하려면 Google 계정으로 로그인해주세요."
+      />
 
       {/* Search section */}
       <div className="container py-8 space-y-2">
