@@ -40,6 +40,7 @@ export default function Index() {
   const [paragraphOpen, setParagraphOpen] = useState(false);
   const [paragraphLoading, setParagraphLoading] = useState(false);
   const [paragraphData, setParagraphData] = useState<{ paragraph: string; translation: string } | null>(null);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const cookie = getUserCookie();
 
@@ -112,6 +113,8 @@ export default function Index() {
         toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
         if (selectedDate) await loadWordsByDate(selectedDate);
         await loadAllWords();
+        speak(existing.word, true);
+        setTimeout(() => speak(existing.word, true), 2000);
         return;
       }
 
@@ -135,6 +138,9 @@ export default function Index() {
           setCards((prev) => [data as any, ...prev]);
         }
         setAllWords((prev) => [data, ...prev]);
+        // Slowly pronounce the word twice with 2s interval
+        speak(result.word, true);
+        setTimeout(() => speak(result.word, true), 2000);
       }
     } catch (err: any) {
       toast.error(err.message || "단어를 찾을 수 없습니다.");
@@ -171,6 +177,7 @@ export default function Index() {
     setParagraphOpen(true);
     setParagraphLoading(true);
     setParagraphData(null);
+    setShowTranslation(false);
     try {
       const { data, error } = await supabase.functions.invoke("paragraph", {
         body: { words: cards.map((c) => c.word) },
@@ -316,8 +323,31 @@ export default function Index() {
                 </div>
               </div>
               {paragraphData.translation && (
-                <div className="bg-card rounded-lg p-4 border border-border">
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{paragraphData.translation}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-body text-xs font-semibold text-muted-foreground">한국어 번역</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs font-body"
+                      onClick={() => setShowTranslation((v) => !v)}
+                    >
+                      {showTranslation ? "번역 가리기" : "번역 보기"}
+                    </Button>
+                  </div>
+                  <div
+                    className="bg-card rounded-lg p-4 border border-border cursor-pointer"
+                    onClick={() => !showTranslation && setShowTranslation(true)}
+                  >
+                    <p
+                      className={cn(
+                        "font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
+                        !showTranslation && "blur-md"
+                      )}
+                    >
+                      {paragraphData.translation}
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="flex flex-wrap gap-1.5">
