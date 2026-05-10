@@ -281,7 +281,7 @@ export default function Index() {
         onClose={() => setQuizSetupOpen(false)}
         words={allWords}
         onStart={handleQuiz1Start}
-        title="퀴즈 1 - 단어 복습"
+        title="퀴즈 - 단어 복습"
       />
 
       {/* Paragraph Dialog */}
