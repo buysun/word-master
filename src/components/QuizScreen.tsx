@@ -221,11 +221,11 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     const total = score.first + score.second + score.failed;
     const percent = total > 0 ? Math.round((score.first / total) * 100) : 0;
     return (
-      <div className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4 overflow-y-auto">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="text-center space-y-6 max-w-sm w-full"
+          className="text-center space-y-6 max-w-sm w-full py-6"
         >
           <h2 className="font-display text-3xl font-bold text-foreground">🎉 퀴즈 완료!</h2>
           <div className="bg-card rounded-lg p-6 space-y-3 border border-border">
@@ -236,6 +236,19 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
               <p>❌ 틀림: <span className="text-destructive font-semibold">{score.failed}</span></p>
             </div>
           </div>
+          {wrongWords.length > 0 && (
+            <div className="bg-card rounded-lg p-4 border border-border text-left space-y-2">
+              <p className="font-display text-sm font-semibold text-destructive">📝 틀린 단어 다시 보기</p>
+              <ul className="space-y-1.5">
+                {wrongWords.map((w) => (
+                  <li key={w.id} className="font-body text-sm text-foreground">
+                    <span className="font-semibold">{w.word}</span>
+                    <span className="text-muted-foreground"> - {w.definition}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <Button onClick={onFinish} className="w-full h-12 bg-primary text-primary-foreground font-display text-base">
             메인으로
           </Button>
