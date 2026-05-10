@@ -99,6 +99,18 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
   const [score, setScore] = useState({ first: 0, second: 0, failed: 0 });
   const [finished, setFinished] = useState(false);
   const [shakeIndex, setShakeIndex] = useState<number | null>(null);
+  const [wrongWords, setWrongWords] = useState<Tables<"searched_words">[]>([]);
+  const [wrongWordIds, setWrongWordIds] = useState<Set<string>>(new Set());
+
+  const markWrong = useCallback((word: Tables<"searched_words">) => {
+    setWrongWordIds(prev => {
+      if (prev.has(word.id)) return prev;
+      const next = new Set(prev);
+      next.add(word.id);
+      setWrongWords(w => [...w, word]);
+      return next;
+    });
+  }, []);
 
   const currentQ = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0;
