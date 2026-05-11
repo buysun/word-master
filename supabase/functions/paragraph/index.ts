@@ -25,14 +25,19 @@ serve(async (req) => {
       .map((w) => w.trim())
       .slice(0, 60);
 
-    const systemPrompt = `You are a friendly English writing assistant for Korean elementary school students (around 3rd-4th grade).
-You will be given a list of English words/phrases. Write a short, coherent English paragraph that uses ALL of the given words at least once.
-Rules:
-- Use every word in the list (you may inflect verbs/plurals as needed).
-- Keep sentences simple and short.
-- The paragraph should make sense as a single story or topic.
+    const systemPrompt = `You are an English writing assistant for Korean middle school students.
+You will be given a list of English words/phrases. Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that uses EVERY single word in the list at least once.
+
+Topic guidelines:
+- Pick an engaging topic that Korean middle schoolers care about: recent-style news, pop culture, K-pop or world music, movies/Netflix shows, celebrities, sports stars, gaming, social media trends, or school life.
+- The paragraph MUST be a coherent, complete story with a clear beginning, middle, and end (not a random list of sentences).
+
+Hard rules:
+- EVERY word from the list MUST appear in the paragraph (inflections like plural/past tense are OK). Do not skip any word.
+- Vocabulary level: middle school (not too easy, not too hard). Sentences can be a bit longer than elementary level.
 - Then provide a natural Korean translation of the paragraph.
-Respond with ONLY a JSON object:
+
+Respond with ONLY a JSON object (no markdown, no commentary):
 {"paragraph":"English paragraph here","translation":"한국어 번역"}`;
 
     const userContent = `Words: ${cleanWords.join(", ")}`;
@@ -44,13 +49,13 @@ Respond with ONLY a JSON object:
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        temperature: 0.6,
-        max_tokens: 800,
+        temperature: 0.8,
+        max_tokens: 1500,
       }),
     });
 
