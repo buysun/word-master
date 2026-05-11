@@ -49,13 +49,13 @@ Respond with ONLY a JSON object (no markdown, no commentary):
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        temperature: 0.6,
-        max_tokens: 800,
+        temperature: 0.8,
+        max_tokens: 1500,
       }),
     });
 
