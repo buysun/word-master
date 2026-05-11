@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { words } = await req.json();
+    const { words, date, month, day, year } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -25,22 +25,27 @@ serve(async (req) => {
       .map((w) => w.trim())
       .slice(0, 60);
 
-    const systemPrompt = `You are an English writing assistant for Korean middle school students.
-You will be given a list of English words/phrases. Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that uses EVERY single word in the list at least once.
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const dateLabel = (typeof month === "number" && typeof day === "number")
+      ? `${monthNames[month - 1]} ${day}${typeof year === "number" ? `, ${year}` : ""}`
+      : (typeof date === "string" ? date : "");
 
-Topic guidelines:
-- Pick an engaging topic that Korean middle schoolers care about: recent-style news, pop culture, K-pop or world music, movies/Netflix shows, celebrities, sports stars, gaming, social media trends, or school life.
-- The paragraph MUST be a coherent, complete story with a clear beginning, middle, and end (not a random list of sentences).
+    const systemPrompt = `You are an English writing assistant for Korean middle school students.
+You will be given a list of English words/phrases AND a calendar date. Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that:
+1) Is inspired by a REAL, INTERESTING historical event, famous birthday, or fun fact that actually happened on ${dateLabel || "the given date"} (any year in history). Mention the event/person and the year naturally inside the story.
+2) Uses EVERY single word from the list at least once (inflections like plural/past tense are OK). Do not skip any word.
+
+Topic guidance: pick a historical fact that Korean middle schoolers would find cool — famous musicians, movie releases, sports moments, tech/science breakthroughs, pop culture milestones, or major world news on that date.
 
 Hard rules:
-- EVERY word from the list MUST appear in the paragraph (inflections like plural/past tense are OK). Do not skip any word.
-- Vocabulary level: middle school (not too easy, not too hard). Sentences can be a bit longer than elementary level.
+- The paragraph MUST be a coherent, complete story (beginning, middle, end), not a list of sentences.
+- Vocabulary level: middle school.
 - Then provide a natural Korean translation of the paragraph.
 
 Respond with ONLY a JSON object (no markdown, no commentary):
 {"paragraph":"English paragraph here","translation":"한국어 번역"}`;
 
-    const userContent = `Words: ${cleanWords.join(", ")}`;
+    const userContent = `Date: ${dateLabel}\nWords: ${cleanWords.join(", ")}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
