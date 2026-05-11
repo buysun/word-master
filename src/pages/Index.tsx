@@ -209,8 +209,16 @@ export default function Index() {
     setParagraphData(null);
     setShowTranslation(false);
     try {
+      const dateStr = selectedDate ? getKSTDateString(selectedDate) : getTodayKST();
+      const [y, m, d] = dateStr.split("-").map(Number);
       const { data, error } = await supabase.functions.invoke("paragraph", {
-        body: { words: cards.map((c) => c.word) },
+        body: {
+          words: cards.map((c) => c.word),
+          date: dateStr,
+          month: m,
+          day: d,
+          year: y,
+        },
       });
       if (error) throw error;
       if (!data?.paragraph) throw new Error(data?.error || "문단을 생성하지 못했습니다.");
