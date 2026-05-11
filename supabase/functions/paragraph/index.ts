@@ -49,13 +49,14 @@ Respond with ONLY a JSON object (no markdown, no commentary):
         "Authorization": `Bearer ${LOVABLE_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
         temperature: 0.8,
-        max_tokens: 1500,
+        max_tokens: 3000,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -80,10 +81,21 @@ Respond with ONLY a JSON object (no markdown, no commentary):
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content?.trim() || "";
     const cleaned = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const parsed = JSON.parse(cleaned);
 
-    const paragraph = typeof parsed.paragraph === "string" ? parsed.paragraph.trim() : "";
-    const translation = typeof parsed.translation === "string" ? parsed.translation.trim() : "";
+    let paragraph = "";
+    let translation = "";
+    try {
+      const parsed = JSON.parse(cleaned);
+      paragraph = typeof parsed.paragraph === "string" ? parsed.paragraph.trim() : "";
+      translation = typeof parsed.translation === "string" ? parsed.translation.trim() : "";
+    } catch (_e) {
+      // Fallback: extract fields with regex if JSON is malformed/truncated
+      const pMatch = cleaned.match(/"paragraph"\s*:\s*"((?:\\.|[^"\\])*)"/);
+      const tMatch = cleaned.match(/"translation"\s*:\s*"((?:\\.|[^"\\])*)"/);
+      const unescape = (s: string) => s.replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+      if (pMatch) paragraph = unescape(pMatch[1]).trim();
+      if (tMatch) translation = unescape(tMatch[1]).trim();
+    }
     if (!paragraph) throw new Error("paragraph was empty");
 
     return new Response(JSON.stringify({ paragraph, translation, usedWords: cleanWords }), {
