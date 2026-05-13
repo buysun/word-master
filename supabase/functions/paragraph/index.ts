@@ -30,12 +30,17 @@ serve(async (req) => {
       ? `${monthNames[month - 1]} ${day}${typeof year === "number" ? `, ${year}` : ""}`
       : (typeof date === "string" ? date : "");
 
-    const systemPrompt = `You are an English writing assistant for Korean middle school students.
-You will be given a list of English words/phrases AND a calendar date. Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that:
-1) Is inspired by a REAL, INTERESTING historical event, famous birthday, or fun fact that actually happened on ${dateLabel || "the given date"} (any year in history). Mention the event/person and the year naturally inside the story.
-2) Uses EVERY single word from the list at least once (inflections like plural/past tense are OK). Do not skip any word.
+    const monthDayLabel = (typeof month === "number" && typeof day === "number")
+      ? `${monthNames[month - 1]} ${day}`
+      : dateLabel;
 
-Topic guidance: pick a historical fact that Korean middle schoolers would find cool — famous musicians, movie releases, sports moments, tech/science breakthroughs, pop culture milestones, or major world news on that date.
+    const systemPrompt = `You are an English writing assistant for Korean middle school students.
+You will be given a list of English words/phrases AND a month/day (e.g., "${monthDayLabel}"). Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that:
+1) Is inspired by a REAL, INTERESTING historical event, famous birthday, or fun fact that actually happened on ${monthDayLabel || "the given month/day"} in ANY PAST YEAR (NOT the current year — pick a notable past year). Mention the event/person and the past year naturally inside the story.
+2) Uses EVERY single word from the list at least once (inflections like plural/past tense are OK). Do not skip any word.
+3) MAXIMIZE the proportion of sentences that contain at least one of the given words. Minimize "filler" sentences that contain none of the words — ideally every sentence should include one or more of the words. Combine ideas to keep word density high.
+
+Topic guidance: pick a historical fact that Korean middle schoolers would find cool — famous musicians, movie releases, sports moments, tech/science breakthroughs, pop culture milestones, or major world news on that month/day.
 
 Hard rules:
 - The paragraph MUST be a coherent, complete story (beginning, middle, end), not a list of sentences.
