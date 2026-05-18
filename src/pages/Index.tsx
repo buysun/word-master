@@ -65,10 +65,11 @@ export default function Index() {
     if (data) setAllWords(data);
   }, [cookie]);
 
-  const loadWordsByDate = useCallback(async (date: Date) => {
-    const dateStr = getKSTDateString(date);
-    const startOfDay = `${dateStr}T00:00:00+09:00`;
-    const endOfDay = `${dateStr}T23:59:59+09:00`;
+  const loadWordsByRange = useCallback(async (from: Date, to?: Date) => {
+    const fromStr = getKSTDateString(from);
+    const toStr = getKSTDateString(to ?? from);
+    const startOfDay = `${fromStr}T00:00:00+09:00`;
+    const endOfDay = `${toStr}T23:59:59+09:00`;
 
     const { data } = await supabase
       .from("searched_words")
@@ -107,11 +108,33 @@ export default function Index() {
   }, [loadAllWords, loadStats]);
 
   useEffect(() => {
-    if (selectedDate) loadWordsByDate(selectedDate);
-  }, [selectedDate, loadWordsByDate]);
+    if (dateRange.from) loadWordsByRange(dateRange.from, dateRange.to);
+  }, [dateRange, loadWordsByRange]);
 
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
+    if (!date) {
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+    const { from, to } = dateRange;
+    // No anchor or range already complete → start new range
+    if (!from || (from && to)) {
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    // Anchor exists, no end yet
+    if (date.getTime() === from.getTime()) {
+      // same day → keep as single
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    if (date < from) {
+      // picked smaller date → cancel previous anchor, use this as new single
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    // picked bigger date → complete the range
+    setDateRange({ from, to: date });
   };
 
   const handleSearch = async (word: string) => {
