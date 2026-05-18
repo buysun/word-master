@@ -14,7 +14,7 @@ import QuizSetupModal from "@/components/QuizSetupModal";
 import QuizScreen from "@/components/QuizScreen";
 import { lookupWord } from "@/lib/dictionary";
 import { getUserCookie } from "@/lib/cookie";
-import { speak } from "@/lib/speech";
+import { speak, speakTwice } from "@/lib/speech";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
