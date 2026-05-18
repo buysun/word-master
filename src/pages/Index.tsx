@@ -324,19 +324,23 @@ export default function Index() {
             <Button
               variant="outline"
               className={cn(
-                "w-[220px] justify-start text-left font-body",
-                !selectedDate && "text-muted-foreground"
+                "w-[280px] justify-start text-left font-body",
+                !dateRange.from && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "yyyy년 M월 d일", { locale: ko }) : "날짜 선택"}
+              {dateRange.from
+                ? dateRange.to
+                  ? `${format(dateRange.from, "M월 d일", { locale: ko })} ~ ${format(dateRange.to, "M월 d일", { locale: ko })}`
+                  : format(dateRange.from, "yyyy년 M월 d일", { locale: ko })
+                : "날짜 선택"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="center">
             <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
+              mode="range"
+              selected={dateRange as any}
+              onDayClick={handleDateSelect}
               initialFocus
               modifiers={{ hasWords: datesWithWords }}
               modifiersStyles={{ hasWords: { color: "hsl(0 84% 60%)", fontWeight: 700 } }}
