@@ -16,7 +16,7 @@ interface QuizScreenProps {
   onFinish: () => void;
 }
 
-type QuestionType = "word-to-def" | "def-to-word" | "sentence-fill";
+type QuestionType = "word-to-def" | "def-to-word" | "sentence-fill" | "def-to-typed-word";
 
 interface Question {
   type: QuestionType;
@@ -24,21 +24,27 @@ interface Question {
   options: string[];
   correctIndex: number;
   prompt: string;
+  promptTranslation?: string;
+}
+
+function splitExample(raw: string): { en: string; kr: string } {
+  const lines = (raw || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  return { en: lines[0] || "", kr: lines[1] || "" };
 }
 
 function generateQuestions(words: Tables<"searched_words">[]): Question[] {
   if (words.length < 2) return [];
-  
+
   const questions: Question[] = [];
   const shuffled = [...words].sort(() => Math.random() - 0.5);
 
   for (const word of shuffled) {
-    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill"];
+    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill", "def-to-typed-word"];
     const type = types[Math.floor(Math.random() * types.length)];
 
     // Get 3 wrong options from other words
     const others = words.filter(w => w.id !== word.id).sort(() => Math.random() - 0.5).slice(0, 3);
-    
+
     // If not enough other words, pad with the available ones
     while (others.length < 3) {
       const pad = words.filter(w => w.id !== word.id)[0];
@@ -48,8 +54,10 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
 
     if (others.length < 3) continue;
 
-    let options: string[];
+    let options: string[] = [];
     let prompt: string;
+    let promptTranslation: string | undefined;
+    let finalType: QuestionType = type;
 
     switch (type) {
       case "word-to-def":
@@ -60,30 +68,42 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
         options = [word.word, ...others.map(o => o.word)];
         prompt = word.definition;
         break;
-      case "sentence-fill":
+      case "def-to-typed-word":
+        // No multiple-choice options; user types the English word.
+        prompt = word.definition;
+        break;
+      case "sentence-fill": {
+        const { en, kr } = splitExample(word.example_sentence);
         options = [word.word, ...others.map(o => o.word)];
-        prompt = word.example_sentence.replace(new RegExp(`\\b${word.word}\\b`, "gi"), "______");
-        if (prompt === word.example_sentence) {
-          // If word not found in sentence, use word-to-def instead
+        const blanked = en.replace(new RegExp(`\\b${word.word}\\b`, "gi"), "______");
+        if (blanked === en) {
+          // word not in sentence → fall back to word-to-def
           options = [word.definition, ...others.map(o => o.definition)];
           prompt = word.word;
+          finalType = "word-to-def";
+        } else {
+          prompt = blanked;
+          promptTranslation = kr || undefined;
         }
         break;
+      }
     }
 
-    // Shuffle options, track correct index
-    const correctAnswer = options[0];
-    const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
-    const correctIndex = shuffledOptions.indexOf(correctAnswer);
+    let shuffledOptions: string[] = [];
+    let correctIndex = 0;
+    if (finalType !== "def-to-typed-word") {
+      const correctAnswer = options[0];
+      shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+      correctIndex = shuffledOptions.indexOf(correctAnswer);
+    }
 
     questions.push({
-      type: prompt === word.word && options[0] === word.definition ? "word-to-def" : 
-            prompt === word.definition ? "def-to-word" : 
-            type,
+      type: finalType,
       correctWord: word,
       options: shuffledOptions,
       correctIndex,
       prompt,
+      promptTranslation,
     });
   }
 
