@@ -429,7 +429,7 @@ export default function Index() {
                   >
                     <p
                       className={cn(
-                        "font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
+                        "font-body text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
                         !showTranslation && "blur-md"
                       )}
                     >
