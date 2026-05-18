@@ -122,6 +122,8 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
   const [shakeIndex, setShakeIndex] = useState<number | null>(null);
   const [wrongWords, setWrongWords] = useState<Tables<"searched_words">[]>([]);
   const [wrongWordIds, setWrongWordIds] = useState<Set<string>>(new Set());
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [shakeInput, setShakeInput] = useState(false);
 
   const markWrong = useCallback((word: Tables<"searched_words">) => {
     setWrongWordIds(prev => {
