@@ -381,7 +381,7 @@ export default function Index() {
 
       {/* Paragraph Dialog */}
       <Dialog open={paragraphOpen} onOpenChange={setParagraphOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg sm:max-w-2xl lg:max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
