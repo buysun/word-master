@@ -262,7 +262,7 @@ export default function Index() {
           setQuizWords(null);
           loadAllWords();
           loadStats();
-          if (selectedDate) loadWordsByDate(selectedDate);
+          if (dateRange.from) loadWordsByRange(dateRange.from, dateRange.to);
         }}
       />
     );
