@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playCorrect, playWrong } from "@/lib/sound";
+import { cn } from "@/lib/utils";
 
 interface QuizScreenProps {
   words: Tables<"searched_words">[];
