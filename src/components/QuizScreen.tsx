@@ -353,9 +353,13 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     );
   }
 
-  const typeLabel = currentQ.type === "word-to-def" ? "이 단어의 뜻은?" :
-                    currentQ.type === "def-to-word" ? "이 뜻에 해당하는 단어는?" :
-                    "빈칸에 들어갈 단어는?";
+  const typeLabel =
+    currentQ.type === "word-to-def" ? "이 단어의 뜻은?" :
+    currentQ.type === "def-to-word" ? "이 뜻에 해당하는 단어는?" :
+    currentQ.type === "def-to-typed-word" ? "이 뜻에 해당하는 영어 단어를 입력하세요" :
+    "빈칸에 들어갈 단어는?";
+
+  const isTyping = currentQ.type === "def-to-typed-word";
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -385,39 +389,73 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
             <div className="text-center space-y-2">
               <p className="font-body text-sm text-primary font-medium">{typeLabel}</p>
               <p className="font-display text-2xl font-bold text-foreground leading-relaxed">{currentQ.prompt}</p>
+              {currentQ.type === "sentence-fill" && currentQ.promptTranslation && (
+                <p className="font-body text-sm text-muted-foreground leading-relaxed pt-1">
+                  💬 {currentQ.promptTranslation}
+                </p>
+              )}
             </div>
 
-            {/* Options grid */}
-            <div className="grid grid-cols-1 gap-3">
-              {currentQ.options.map((option, i) => {
-                let variant: "outline" | "default" | "destructive" = "outline";
-                let extraClass = "h-auto min-h-[3.5rem] text-left px-4 py-3 font-body text-sm leading-snug whitespace-normal";
-
-                if (showResult) {
-                  if (i === currentQ.correctIndex) {
-                    extraClass += " bg-success text-success-foreground border-success";
-                  } else if (i === selected && !isCorrect) {
-                    extraClass += " bg-destructive text-destructive-foreground border-destructive";
-                  } else {
-                    extraClass += " opacity-50";
-                  }
-                } else if (shakeIndex === i) {
-                  extraClass += " animate-shake border-destructive";
-                }
-
-                return (
+            {/* Typing input OR options grid */}
+            {isTyping ? (
+              <div className="space-y-3">
+                <Input
+                  autoFocus
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleTypedSubmit();
+                  }}
+                  disabled={showResult}
+                  placeholder="영어 단어 입력"
+                  className={cn(
+                    "h-12 text-center font-display text-lg",
+                    shakeInput && "animate-shake border-destructive",
+                    showResult && isCorrect && "border-success bg-success/10",
+                    showResult && !isCorrect && "border-destructive bg-destructive/10",
+                  )}
+                />
+                {!showResult && (
                   <Button
-                    key={i}
-                    variant={variant}
-                    className={extraClass}
-                    onClick={() => handleSelect(i)}
-                    disabled={showResult}
+                    onClick={handleTypedSubmit}
+                    className="w-full h-12 bg-primary text-primary-foreground font-display"
                   >
-                    {option}
+                    제출
                   </Button>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {currentQ.options.map((option, i) => {
+                  let variant: "outline" | "default" | "destructive" = "outline";
+                  let extraClass = "h-auto min-h-[3.5rem] text-left px-4 py-3 font-body text-sm leading-snug whitespace-normal";
+
+                  if (showResult) {
+                    if (i === currentQ.correctIndex) {
+                      extraClass += " bg-success text-success-foreground border-success";
+                    } else if (i === selected && !isCorrect) {
+                      extraClass += " bg-destructive text-destructive-foreground border-destructive";
+                    } else {
+                      extraClass += " opacity-50";
+                    }
+                  } else if (shakeIndex === i) {
+                    extraClass += " animate-shake border-destructive";
+                  }
+
+                  return (
+                    <Button
+                      key={i}
+                      variant={variant}
+                      className={extraClass}
+                      onClick={() => handleSelect(i)}
+                      disabled={showResult}
+                    >
+                      {option}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2">
