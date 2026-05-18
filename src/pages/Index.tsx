@@ -191,9 +191,8 @@ export default function Index() {
           setCards((prev) => [data as any, ...prev]);
         }
         setAllWords((prev) => [data, ...prev]);
-        // Slowly pronounce the word twice with 2s interval
-        speak(result.word, true);
-        setTimeout(() => speak(result.word, true), 2000);
+        // Slowly pronounce the word twice — second only after first ends
+        speakTwice(result.word, true);
       }
     } catch (err: any) {
       toast.error(err.message || "단어를 찾을 수 없습니다.");
