@@ -100,10 +100,11 @@ export async function lookupWord(word: string): Promise<WordData> {
   }
 
   const ex = translated.example || sourceExample;
+  const exKr = (translated.exampleTranslation || "").trim();
   return {
     word: entry.word,
     phonetic,
     definition: translated.translation,
-    exampleSentence: ex,
+    exampleSentence: exKr ? `${ex}\n${exKr}` : ex,
   };
 }
