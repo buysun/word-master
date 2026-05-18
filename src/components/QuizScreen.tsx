@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Tables } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, ArrowLeft } from "lucide-react";
 import confetti from "canvas-confetti";
 import { playCorrect, playWrong } from "@/lib/sound";
+import { cn } from "@/lib/utils";
 
 interface QuizScreenProps {
   words: Tables<"searched_words">[];
@@ -15,7 +17,7 @@ interface QuizScreenProps {
   onFinish: () => void;
 }
 
-type QuestionType = "word-to-def" | "def-to-word" | "sentence-fill";
+type QuestionType = "word-to-def" | "def-to-word" | "sentence-fill" | "def-to-typed-word";
 
 interface Question {
   type: QuestionType;
@@ -23,21 +25,27 @@ interface Question {
   options: string[];
   correctIndex: number;
   prompt: string;
+  promptTranslation?: string;
+}
+
+function splitExample(raw: string): { en: string; kr: string } {
+  const lines = (raw || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  return { en: lines[0] || "", kr: lines[1] || "" };
 }
 
 function generateQuestions(words: Tables<"searched_words">[]): Question[] {
   if (words.length < 2) return [];
-  
+
   const questions: Question[] = [];
   const shuffled = [...words].sort(() => Math.random() - 0.5);
 
   for (const word of shuffled) {
-    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill"];
+    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill", "def-to-typed-word"];
     const type = types[Math.floor(Math.random() * types.length)];
 
     // Get 3 wrong options from other words
     const others = words.filter(w => w.id !== word.id).sort(() => Math.random() - 0.5).slice(0, 3);
-    
+
     // If not enough other words, pad with the available ones
     while (others.length < 3) {
       const pad = words.filter(w => w.id !== word.id)[0];
@@ -47,8 +55,10 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
 
     if (others.length < 3) continue;
 
-    let options: string[];
+    let options: string[] = [];
     let prompt: string;
+    let promptTranslation: string | undefined;
+    let finalType: QuestionType = type;
 
     switch (type) {
       case "word-to-def":
@@ -59,30 +69,42 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
         options = [word.word, ...others.map(o => o.word)];
         prompt = word.definition;
         break;
-      case "sentence-fill":
+      case "def-to-typed-word":
+        // No multiple-choice options; user types the English word.
+        prompt = word.definition;
+        break;
+      case "sentence-fill": {
+        const { en, kr } = splitExample(word.example_sentence);
         options = [word.word, ...others.map(o => o.word)];
-        prompt = word.example_sentence.replace(new RegExp(`\\b${word.word}\\b`, "gi"), "______");
-        if (prompt === word.example_sentence) {
-          // If word not found in sentence, use word-to-def instead
+        const blanked = en.replace(new RegExp(`\\b${word.word}\\b`, "gi"), "______");
+        if (blanked === en) {
+          // word not in sentence → fall back to word-to-def
           options = [word.definition, ...others.map(o => o.definition)];
           prompt = word.word;
+          finalType = "word-to-def";
+        } else {
+          prompt = blanked;
+          promptTranslation = kr || undefined;
         }
         break;
+      }
     }
 
-    // Shuffle options, track correct index
-    const correctAnswer = options[0];
-    const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
-    const correctIndex = shuffledOptions.indexOf(correctAnswer);
+    let shuffledOptions: string[] = [];
+    let correctIndex = 0;
+    if (finalType !== "def-to-typed-word") {
+      const correctAnswer = options[0];
+      shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+      correctIndex = shuffledOptions.indexOf(correctAnswer);
+    }
 
     questions.push({
-      type: prompt === word.word && options[0] === word.definition ? "word-to-def" : 
-            prompt === word.definition ? "def-to-word" : 
-            type,
+      type: finalType,
       correctWord: word,
       options: shuffledOptions,
       correctIndex,
       prompt,
+      promptTranslation,
     });
   }
 
@@ -101,6 +123,8 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
   const [shakeIndex, setShakeIndex] = useState<number | null>(null);
   const [wrongWords, setWrongWords] = useState<Tables<"searched_words">[]>([]);
   const [wrongWordIds, setWrongWordIds] = useState<Set<string>>(new Set());
+  const [typedAnswer, setTypedAnswer] = useState("");
+  const [shakeInput, setShakeInput] = useState(false);
 
   const markWrong = useCallback((word: Tables<"searched_words">) => {
     setWrongWordIds(prev => {
@@ -189,6 +213,48 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     }
   };
 
+  const handleTypedSubmit = () => {
+    if (showResult) return;
+    const answer = typedAnswer.trim().toLowerCase();
+    if (!answer) return;
+    const correct = currentQ.correctWord.word.trim().toLowerCase();
+    if (answer === correct) {
+      setIsCorrect(true);
+      setShowResult(true);
+      playCorrect();
+      const resultValue = attempts === 0 ? 1 : 2;
+      setScore(prev => ({
+        ...prev,
+        [resultValue === 1 ? "first" : "second"]: prev[resultValue === 1 ? "first" : "second"] + 1,
+      }));
+      recordResult(currentQ.correctWord.id, resultValue);
+      if (resultValue === 1) updateScore(2);
+      setTimeout(() => {
+        setSelected(null);
+        setShowResult(false);
+        setIsCorrect(false);
+        setAttempts(0);
+        handleNext();
+      }, 1200);
+    } else {
+      if (attempts >= 1) {
+        setIsCorrect(false);
+        setShowResult(true);
+        playWrong();
+        setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
+        recordResult(currentQ.correctWord.id, 3);
+        markWrong(currentQ.correctWord);
+      } else {
+        playWrong();
+        setShakeInput(true);
+        setAttempts(1);
+        markWrong(currentQ.correctWord);
+        updateScore(-1);
+        setTimeout(() => setShakeInput(false), 400);
+      }
+    }
+  };
+
   const handleNeedStudy = () => {
     setIsCorrect(false);
     setShowResult(true);
@@ -202,18 +268,37 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
   const handleNext = () => {
     if (currentIndex + 1 >= questions.length) {
       setFinished(true);
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444"],
-      });
+      const total = score.first + score.second + score.failed;
+      const percent = total > 0 ? Math.round((score.first / total) * 100) : 0;
+      if (percent >= 90) {
+        // Celebratory fireworks for top scores
+        const duration = 3000;
+        const end = Date.now() + duration;
+        const colors = ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444", "#EC4899", "#06B6D4"];
+        (function frame() {
+          confetti({ particleCount: 6, angle: 60, spread: 70, origin: { x: 0 }, colors });
+          confetti({ particleCount: 6, angle: 120, spread: 70, origin: { x: 1 }, colors });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        })();
+        confetti({ particleCount: 250, spread: 100, origin: { y: 0.5 }, colors });
+        setTimeout(() => confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 }, colors }), 600);
+        setTimeout(() => confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors }), 1200);
+      } else {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444"],
+        });
+      }
     } else {
       setCurrentIndex(prev => prev + 1);
       setAttempts(0);
       setSelected(null);
       setShowResult(false);
       setIsCorrect(false);
+      setTypedAnswer("");
+      setShakeInput(false);
     }
   };
 
@@ -269,9 +354,13 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     );
   }
 
-  const typeLabel = currentQ.type === "word-to-def" ? "이 단어의 뜻은?" :
-                    currentQ.type === "def-to-word" ? "이 뜻에 해당하는 단어는?" :
-                    "빈칸에 들어갈 단어는?";
+  const typeLabel =
+    currentQ.type === "word-to-def" ? "이 단어의 뜻은?" :
+    currentQ.type === "def-to-word" ? "이 뜻에 해당하는 단어는?" :
+    currentQ.type === "def-to-typed-word" ? "이 뜻에 해당하는 영어 단어를 입력하세요" :
+    "빈칸에 들어갈 단어는?";
+
+  const isTyping = currentQ.type === "def-to-typed-word";
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -301,39 +390,73 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
             <div className="text-center space-y-2">
               <p className="font-body text-sm text-primary font-medium">{typeLabel}</p>
               <p className="font-display text-2xl font-bold text-foreground leading-relaxed">{currentQ.prompt}</p>
+              {currentQ.type === "sentence-fill" && currentQ.promptTranslation && (
+                <p className="font-body text-sm text-muted-foreground leading-relaxed pt-1">
+                  💬 {currentQ.promptTranslation}
+                </p>
+              )}
             </div>
 
-            {/* Options grid */}
-            <div className="grid grid-cols-1 gap-3">
-              {currentQ.options.map((option, i) => {
-                let variant: "outline" | "default" | "destructive" = "outline";
-                let extraClass = "h-auto min-h-[3.5rem] text-left px-4 py-3 font-body text-sm leading-snug whitespace-normal";
-
-                if (showResult) {
-                  if (i === currentQ.correctIndex) {
-                    extraClass += " bg-success text-success-foreground border-success";
-                  } else if (i === selected && !isCorrect) {
-                    extraClass += " bg-destructive text-destructive-foreground border-destructive";
-                  } else {
-                    extraClass += " opacity-50";
-                  }
-                } else if (shakeIndex === i) {
-                  extraClass += " animate-shake border-destructive";
-                }
-
-                return (
+            {/* Typing input OR options grid */}
+            {isTyping ? (
+              <div className="space-y-3">
+                <Input
+                  autoFocus
+                  value={typedAnswer}
+                  onChange={(e) => setTypedAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleTypedSubmit();
+                  }}
+                  disabled={showResult}
+                  placeholder="영어 단어 입력"
+                  className={cn(
+                    "h-12 text-center font-display text-lg",
+                    shakeInput && "animate-shake border-destructive",
+                    showResult && isCorrect && "border-success bg-success/10",
+                    showResult && !isCorrect && "border-destructive bg-destructive/10",
+                  )}
+                />
+                {!showResult && (
                   <Button
-                    key={i}
-                    variant={variant}
-                    className={extraClass}
-                    onClick={() => handleSelect(i)}
-                    disabled={showResult}
+                    onClick={handleTypedSubmit}
+                    className="w-full h-12 bg-primary text-primary-foreground font-display"
                   >
-                    {option}
+                    제출
                   </Button>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3">
+                {currentQ.options.map((option, i) => {
+                  let variant: "outline" | "default" | "destructive" = "outline";
+                  let extraClass = "h-auto min-h-[3.5rem] text-left px-4 py-3 font-body text-sm leading-snug whitespace-normal";
+
+                  if (showResult) {
+                    if (i === currentQ.correctIndex) {
+                      extraClass += " bg-success text-success-foreground border-success";
+                    } else if (i === selected && !isCorrect) {
+                      extraClass += " bg-destructive text-destructive-foreground border-destructive";
+                    } else {
+                      extraClass += " opacity-50";
+                    }
+                  } else if (shakeIndex === i) {
+                    extraClass += " animate-shake border-destructive";
+                  }
+
+                  return (
+                    <Button
+                      key={i}
+                      variant={variant}
+                      className={extraClass}
+                      onClick={() => handleSelect(i)}
+                      disabled={showResult}
+                    >
+                      {option}
+                    </Button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-2">

@@ -14,7 +14,7 @@ import QuizSetupModal from "@/components/QuizSetupModal";
 import QuizScreen from "@/components/QuizScreen";
 import { lookupWord } from "@/lib/dictionary";
 import { getUserCookie } from "@/lib/cookie";
-import { speak } from "@/lib/speech";
+import { speak, speakTwice } from "@/lib/speech";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -35,7 +35,8 @@ export default function Index() {
   const [isLoading, setIsLoading] = useState(false);
   const [cards, setCards] = useState<(Tables<"searched_words"> & { seq_no?: number })[]>([]);
   const [allWords, setAllWords] = useState<Tables<"searched_words">[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>({ from: new Date(), to: undefined });
+  const selectedDate = dateRange.from;
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
   const [quizWords, setQuizWords] = useState<Tables<"searched_words">[] | null>(null);
   const [quizType, setQuizType] = useState("quiz1");
@@ -64,10 +65,11 @@ export default function Index() {
     if (data) setAllWords(data);
   }, [cookie]);
 
-  const loadWordsByDate = useCallback(async (date: Date) => {
-    const dateStr = getKSTDateString(date);
-    const startOfDay = `${dateStr}T00:00:00+09:00`;
-    const endOfDay = `${dateStr}T23:59:59+09:00`;
+  const loadWordsByRange = useCallback(async (from: Date, to?: Date) => {
+    const fromStr = getKSTDateString(from);
+    const toStr = getKSTDateString(to ?? from);
+    const startOfDay = `${fromStr}T00:00:00+09:00`;
+    const endOfDay = `${toStr}T23:59:59+09:00`;
 
     const { data } = await supabase
       .from("searched_words")
@@ -106,11 +108,33 @@ export default function Index() {
   }, [loadAllWords, loadStats]);
 
   useEffect(() => {
-    if (selectedDate) loadWordsByDate(selectedDate);
-  }, [selectedDate, loadWordsByDate]);
+    if (dateRange.from) loadWordsByRange(dateRange.from, dateRange.to);
+  }, [dateRange, loadWordsByRange]);
 
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
+    if (!date) {
+      setDateRange({ from: undefined, to: undefined });
+      return;
+    }
+    const { from, to } = dateRange;
+    // No anchor or range already complete → start new range
+    if (!from || (from && to)) {
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    // Anchor exists, no end yet
+    if (date.getTime() === from.getTime()) {
+      // same day → keep as single
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    if (date < from) {
+      // picked smaller date → cancel previous anchor, use this as new single
+      setDateRange({ from: date, to: undefined });
+      return;
+    }
+    // picked bigger date → complete the range
+    setDateRange({ from, to: date });
   };
 
   const handleSearch = async (word: string) => {
@@ -141,10 +165,9 @@ export default function Index() {
           .update({ searched_at: new Date().toISOString() })
           .eq("id", existing.id);
         toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
-        if (selectedDate) await loadWordsByDate(selectedDate);
+        if (dateRange.from) await loadWordsByRange(dateRange.from, dateRange.to);
         await loadAllWords();
-        speak(existing.word, true);
-        setTimeout(() => speak(existing.word, true), 2000);
+        speakTwice(existing.word, true);
         return;
       }
 
@@ -168,9 +191,8 @@ export default function Index() {
           setCards((prev) => [data as any, ...prev]);
         }
         setAllWords((prev) => [data, ...prev]);
-        // Slowly pronounce the word twice with 2s interval
-        speak(result.word, true);
-        setTimeout(() => speak(result.word, true), 2000);
+        // Slowly pronounce the word twice — second only after first ends
+        speakTwice(result.word, true);
       }
     } catch (err: any) {
       toast.error(err.message || "단어를 찾을 수 없습니다.");
@@ -240,7 +262,7 @@ export default function Index() {
           setQuizWords(null);
           loadAllWords();
           loadStats();
-          if (selectedDate) loadWordsByDate(selectedDate);
+          if (dateRange.from) loadWordsByRange(dateRange.from, dateRange.to);
         }}
       />
     );
@@ -302,19 +324,23 @@ export default function Index() {
             <Button
               variant="outline"
               className={cn(
-                "w-[220px] justify-start text-left font-body",
-                !selectedDate && "text-muted-foreground"
+                "w-[280px] justify-start text-left font-body",
+                !dateRange.from && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {selectedDate ? format(selectedDate, "yyyy년 M월 d일", { locale: ko }) : "날짜 선택"}
+              {dateRange.from
+                ? dateRange.to
+                  ? `${format(dateRange.from, "M월 d일", { locale: ko })} ~ ${format(dateRange.to, "M월 d일", { locale: ko })}`
+                  : format(dateRange.from, "yyyy년 M월 d일", { locale: ko })
+                : "날짜 선택"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="center">
             <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
+              mode="range"
+              selected={dateRange as any}
+              onDayClick={handleDateSelect}
               initialFocus
               modifiers={{ hasWords: datesWithWords }}
               modifiersStyles={{ hasWords: { color: "hsl(0 84% 60%)", fontWeight: 700 } }}
@@ -355,7 +381,7 @@ export default function Index() {
 
       {/* Paragraph Dialog */}
       <Dialog open={paragraphOpen} onOpenChange={setParagraphOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg sm:max-w-2xl lg:max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
@@ -372,7 +398,7 @@ export default function Index() {
             <div className="space-y-4 mt-2">
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-body text-base text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
+                  <p className="font-body text-base sm:text-lg lg:text-xl text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -403,7 +429,7 @@ export default function Index() {
                   >
                     <p
                       className={cn(
-                        "font-body text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
+                        "font-body text-sm sm:text-base lg:text-lg text-muted-foreground leading-relaxed whitespace-pre-wrap transition-all select-none",
                         !showTranslation && "blur-md"
                       )}
                     >
