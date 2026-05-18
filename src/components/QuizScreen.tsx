@@ -212,6 +212,48 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
     }
   };
 
+  const handleTypedSubmit = () => {
+    if (showResult) return;
+    const answer = typedAnswer.trim().toLowerCase();
+    if (!answer) return;
+    const correct = currentQ.correctWord.word.trim().toLowerCase();
+    if (answer === correct) {
+      setIsCorrect(true);
+      setShowResult(true);
+      playCorrect();
+      const resultValue = attempts === 0 ? 1 : 2;
+      setScore(prev => ({
+        ...prev,
+        [resultValue === 1 ? "first" : "second"]: prev[resultValue === 1 ? "first" : "second"] + 1,
+      }));
+      recordResult(currentQ.correctWord.id, resultValue);
+      if (resultValue === 1) updateScore(2);
+      setTimeout(() => {
+        setSelected(null);
+        setShowResult(false);
+        setIsCorrect(false);
+        setAttempts(0);
+        handleNext();
+      }, 1200);
+    } else {
+      if (attempts >= 1) {
+        setIsCorrect(false);
+        setShowResult(true);
+        playWrong();
+        setScore(prev => ({ ...prev, failed: prev.failed + 1 }));
+        recordResult(currentQ.correctWord.id, 3);
+        markWrong(currentQ.correctWord);
+      } else {
+        playWrong();
+        setShakeInput(true);
+        setAttempts(1);
+        markWrong(currentQ.correctWord);
+        updateScore(-1);
+        setTimeout(() => setShakeInput(false), 400);
+      }
+    }
+  };
+
   const handleNeedStudy = () => {
     setIsCorrect(false);
     setShowResult(true);
@@ -225,18 +267,37 @@ export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProp
   const handleNext = () => {
     if (currentIndex + 1 >= questions.length) {
       setFinished(true);
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444"],
-      });
+      const total = score.first + score.second + score.failed;
+      const percent = total > 0 ? Math.round((score.first / total) * 100) : 0;
+      if (percent >= 90) {
+        // Celebratory fireworks for top scores
+        const duration = 3000;
+        const end = Date.now() + duration;
+        const colors = ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444", "#EC4899", "#06B6D4"];
+        (function frame() {
+          confetti({ particleCount: 6, angle: 60, spread: 70, origin: { x: 0 }, colors });
+          confetti({ particleCount: 6, angle: 120, spread: 70, origin: { x: 1 }, colors });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        })();
+        confetti({ particleCount: 250, spread: 100, origin: { y: 0.5 }, colors });
+        setTimeout(() => confetti({ particleCount: 200, spread: 120, origin: { y: 0.4 }, colors }), 600);
+        setTimeout(() => confetti({ particleCount: 200, spread: 120, origin: { y: 0.6 }, colors }), 1200);
+      } else {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ["#4F46E5", "#22C55E", "#FBBF24", "#EF4444"],
+        });
+      }
     } else {
       setCurrentIndex(prev => prev + 1);
       setAttempts(0);
       setSelected(null);
       setShowResult(false);
       setIsCorrect(false);
+      setTypedAnswer("");
+      setShakeInput(false);
     }
   };
 
