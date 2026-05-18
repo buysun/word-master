@@ -165,10 +165,9 @@ export default function Index() {
           .update({ searched_at: new Date().toISOString() })
           .eq("id", existing.id);
         toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
-        if (selectedDate) await loadWordsByDate(selectedDate);
+        if (dateRange.from) await loadWordsByRange(dateRange.from, dateRange.to);
         await loadAllWords();
-        speak(existing.word, true);
-        setTimeout(() => speak(existing.word, true), 2000);
+        speakTwice(existing.word, true);
         return;
       }
 
