@@ -32,11 +32,12 @@ async function lookupPhrase(phrase: string): Promise<WordData> {
   }
 
   const ex = translated.example || getFallbackExample(phrase);
+  const exKr = (translated.exampleTranslation || "").trim();
   return {
     word: phrase,
     phonetic: "",
     definition: translated.translation,
-    exampleSentence: ex,
+    exampleSentence: exKr ? `${ex}\n${exKr}` : ex,
   };
 }
 
