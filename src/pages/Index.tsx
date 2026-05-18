@@ -398,7 +398,7 @@ export default function Index() {
             <div className="space-y-4 mt-2">
               <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-body text-base text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
+                  <p className="font-body text-base sm:text-lg lg:text-xl text-foreground leading-relaxed flex-1">{paragraphData.paragraph}</p>
                   <Button
                     variant="ghost"
                     size="icon"
