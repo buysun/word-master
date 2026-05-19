@@ -153,6 +153,14 @@ export default function QuizScreen({ words, allWords, quizType, onFinish }: Quiz
   const currentQ = questions[currentIndex];
   const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0;
 
+  // Auto-play pronunciation when the question shows an English word as the prompt
+  useEffect(() => {
+    if (!currentQ) return;
+    if (currentQ.type === "word-to-def") {
+      speak(currentQ.correctWord.word, false);
+    }
+  }, [currentIndex, currentQ]);
+
   const recordResult = useCallback(async (wordId: string, result: number) => {
     const cookie = getUserCookie();
     const { data: existing } = await supabase
