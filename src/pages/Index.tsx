@@ -257,6 +257,7 @@ export default function Index() {
     return (
       <QuizScreen
         words={quizWords}
+        allWords={allWords}
         quizType={quizType}
         onFinish={() => {
           setQuizWords(null);
@@ -365,7 +366,11 @@ export default function Index() {
         ))}
         {cards.length === 0 && (
           <p className="text-center text-sm text-muted-foreground font-body py-12">
-            {selectedDate ? `${format(selectedDate, "M월 d일", { locale: ko })}에 검색한 단어가 없습니다` : "검색한 단어가 여기에 표시됩니다 📚"}
+            {dateRange.from && dateRange.to
+              ? `${format(dateRange.from, "M월 d일", { locale: ko })}~${format(dateRange.to, "M월 d일", { locale: ko })}에 검색한 단어가 없습니다`
+              : selectedDate
+                ? `${format(selectedDate, "M월 d일", { locale: ko })}에 검색한 단어가 없습니다`
+                : "검색한 단어가 여기에 표시됩니다 📚"}
           </p>
         )}
       </div>
