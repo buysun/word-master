@@ -114,6 +114,22 @@ function generateQuestions(
     });
   }
 
+  // Definition -> choose English word (multiple choice) for every word in current set
+  for (const word of [...words].sort(() => Math.random() - 0.5)) {
+    const distractorPool = (allWords && allWords.length >= 4 ? allWords : words).filter(w => w.id !== word.id);
+    const others = [...distractorPool].sort(() => Math.random() - 0.5).slice(0, 3);
+    if (others.length < 3) continue;
+    const options = [word.word, ...others.map(o => o.word)];
+    const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+    questions.push({
+      type: "def-to-word",
+      correctWord: word,
+      options: shuffledOptions,
+      correctIndex: shuffledOptions.indexOf(word.word),
+      prompt: word.definition,
+    });
+  }
+
   return questions.sort(() => Math.random() - 0.5);
 }
 
