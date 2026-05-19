@@ -34,26 +34,26 @@ function splitExample(raw: string): { en: string; kr: string } {
   return { en: lines[0] || "", kr: lines[1] || "" };
 }
 
-function generateQuestions(words: Tables<"searched_words">[]): Question[] {
+function generateQuestions(
+  words: Tables<"searched_words">[],
+  allWords: Tables<"searched_words">[],
+): Question[] {
   if (words.length < 2) return [];
 
   const questions: Question[] = [];
   const shuffled = [...words].sort(() => Math.random() - 0.5);
 
+  // Non-typing questions are based on the date-filtered set.
   for (const word of shuffled) {
-    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill", "def-to-typed-word"];
+    const types: QuestionType[] = ["word-to-def", "def-to-word", "sentence-fill"];
     const type = types[Math.floor(Math.random() * types.length)];
 
-    // Get 3 wrong options from other words
     const others = words.filter(w => w.id !== word.id).sort(() => Math.random() - 0.5).slice(0, 3);
-
-    // If not enough other words, pad with the available ones
     while (others.length < 3) {
       const pad = words.filter(w => w.id !== word.id)[0];
       if (pad) others.push(pad);
       else break;
     }
-
     if (others.length < 3) continue;
 
     let options: string[] = [];
@@ -70,16 +70,11 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
         options = [word.word, ...others.map(o => o.word)];
         prompt = word.definition;
         break;
-      case "def-to-typed-word":
-        // No multiple-choice options; user types the English word.
-        prompt = word.definition;
-        break;
       case "sentence-fill": {
         const { en, kr } = splitExample(word.example_sentence);
         options = [word.word, ...others.map(o => o.word)];
         const blanked = en.replace(new RegExp(`\\b${word.word}\\b`, "gi"), "______");
         if (blanked === en) {
-          // word not in sentence → fall back to word-to-def
           options = [word.definition, ...others.map(o => o.definition)];
           prompt = word.word;
           finalType = "word-to-def";
@@ -91,13 +86,9 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
       }
     }
 
-    let shuffledOptions: string[] = [];
-    let correctIndex = 0;
-    if (finalType !== "def-to-typed-word") {
-      const correctAnswer = options[0];
-      shuffledOptions = [...options].sort(() => Math.random() - 0.5);
-      correctIndex = shuffledOptions.indexOf(correctAnswer);
-    }
+    const correctAnswer = options[0];
+    const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+    const correctIndex = shuffledOptions.indexOf(correctAnswer);
 
     questions.push({
       type: finalType,
@@ -109,7 +100,20 @@ function generateQuestions(words: Tables<"searched_words">[]): Question[] {
     });
   }
 
-  return questions;
+  // Typed-word questions: target the ENTIRE vocabulary
+  const typingPool = (allWords && allWords.length > 0 ? allWords : words);
+  const typingShuffled = [...typingPool].sort(() => Math.random() - 0.5);
+  for (const word of typingShuffled) {
+    questions.push({
+      type: "def-to-typed-word",
+      correctWord: word,
+      options: [],
+      correctIndex: 0,
+      prompt: word.definition,
+    });
+  }
+
+  return questions.sort(() => Math.random() - 0.5);
 }
 
 export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProps) {
