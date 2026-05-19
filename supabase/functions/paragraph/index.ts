@@ -34,17 +34,17 @@ serve(async (req) => {
       ? `${monthNames[month - 1]} ${day}`
       : dateLabel;
 
-    const systemPrompt = `You are an English writing assistant for Korean middle school students.
+    const systemPrompt = `You are an English writing assistant for Korean 1st-year middle school students (중1).
 You will be given a list of English words/phrases AND a month/day (e.g., "${monthDayLabel}"). Write a SHORT but COMPLETE English story paragraph (about 5-9 sentences) that:
 1) Is inspired by a REAL, INTERESTING historical event, famous birthday, or fun fact that actually happened on ${monthDayLabel || "the given month/day"} in ANY PAST YEAR (NOT the current year — pick a notable past year). Mention the event/person and the past year naturally inside the story.
 2) Uses EVERY single word from the list at least once (inflections like plural/past tense are OK). Do not skip any word.
-3) MAXIMIZE the proportion of sentences that contain at least one of the given words. Minimize "filler" sentences that contain none of the words — ideally every sentence should include one or more of the words. Combine ideas to keep word density high.
+3) STRICT RULE: EVERY sentence MUST contain at least one of the given words. Do NOT write any sentence that has zero given words. If you cannot fit a given word into a sentence naturally, rewrite or merge sentences until every sentence contains at least one given word.
 
 Topic guidance: pick a historical fact that Korean middle schoolers would find cool — famous musicians, movie releases, sports moments, tech/science breakthroughs, pop culture milestones, or major world news on that month/day.
 
 Hard rules:
 - The paragraph MUST be a coherent, complete story (beginning, middle, end), not a list of sentences.
-- Vocabulary level: middle school.
+- Vocabulary level: Korean 중1 (very simple, basic vocabulary and short, simple grammar — present/past tense, simple connectors like "and", "but", "because"). Avoid advanced or rare words outside the given list.
 - Then provide a natural Korean translation of the paragraph.
 
 Respond with ONLY a JSON object (no markdown, no commentary):
