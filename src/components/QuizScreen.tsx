@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 interface QuizScreenProps {
   words: Tables<"searched_words">[];
+  allWords?: Tables<"searched_words">[];
   quizType: string;
   onFinish: () => void;
 }
