@@ -116,8 +116,8 @@ function generateQuestions(
   return questions.sort(() => Math.random() - 0.5);
 }
 
-export default function QuizScreen({ words, quizType, onFinish }: QuizScreenProps) {
-  const questions = useMemo(() => generateQuestions(words), [words]);
+export default function QuizScreen({ words, allWords, quizType, onFinish }: QuizScreenProps) {
+  const questions = useMemo(() => generateQuestions(words, allWords ?? words), [words, allWords]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
