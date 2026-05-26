@@ -257,7 +257,7 @@ export default function Index() {
     return (
       <QuizScreen
         words={quizWords}
-        allWords={allWords}
+        allWords={quizWords}
         quizType={quizType}
         onFinish={() => {
           setQuizWords(null);
