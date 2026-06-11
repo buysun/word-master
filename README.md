@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# Word memorization app
 
-TODO: Document your project here
+
