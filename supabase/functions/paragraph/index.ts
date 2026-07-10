@@ -39,7 +39,7 @@ You will be given a list of English words/phrases AND a month/day (e.g., "${mont
 1) Is inspired by a REAL, INTERESTING historical event, famous birthday, or fun fact that actually happened on ${monthDayLabel || "the given month/day"} in ANY PAST YEAR (NOT the current year — pick a notable past year). Mention the event/person and the past year naturally inside the story.
 2) Uses EVERY single word from the list at least once (inflections like plural/past tense are OK). Do not skip any word.
 3) STRICT RULE: EVERY sentence MUST contain at least one of the given words. Do NOT write any sentence that has zero given words. Keep each sentence short and simple.
-4) Keep the TOTAL LENGTH shorter than before: fewer sentences and shorter sentences overall.`, 
+4) Keep the TOTAL LENGTH shorter than before: fewer sentences and shorter sentences overall.
 
 Topic guidance: pick a historical fact that Korean middle schoolers would find cool — famous musicians, movie releases, sports moments, tech/science breakthroughs, pop culture milestones, or major world news on that month/day.
 
