@@ -185,7 +185,7 @@ export default function Index() {
         // Already searched today - update timestamp to bring to top
         await supabase
           .from("searched_words")
-          .update({ searched_at: new Date().toISOString() })
+          .update({ searched_at: getKSTNowISOString() })
           .eq("id", existing.id);
         toast.info("오늘 이미 검색한 단어입니다. 순서가 업데이트됩니다.");
         if (dateRange.from) await loadWordsByRange(dateRange.from, dateRange.to);
