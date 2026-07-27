@@ -195,6 +195,17 @@ export default function Index() {
       }
 
       const result = await lookupWord(word);
+
+      // Per-user sequence number: max(seq_no) + 1
+      const { data: maxRow } = await supabase
+        .from("searched_words")
+        .select("seq_no")
+        .eq("user_cookie", cookie)
+        .order("seq_no", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const nextSeqNo = (maxRow?.seq_no ?? 0) + 1;
+
       const { data, error } = await supabase
         .from("searched_words")
         .insert({
@@ -204,6 +215,7 @@ export default function Index() {
           example_sentence: result.exampleSentence,
           user_cookie: cookie,
           searched_at: getKSTNowISOString(),
+          seq_no: nextSeqNo,
         })
         .select()
         .single();
