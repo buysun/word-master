@@ -290,6 +290,78 @@ export default function Index() {
     }
   };
 
+  const handlePrint = () => {
+    if (cards.length === 0) {
+      toast.error("선택한 날짜에 검색한 단어가 없습니다.");
+      return;
+    }
+    const esc = (s: string) =>
+      (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const rangeLabel = dateRange.from
+      ? dateRange.to && getKSTDateString(dateRange.to) !== getKSTDateString(dateRange.from)
+        ? `${format(dateRange.from, "yyyy년 M월 d일", { locale: ko })} ~ ${format(dateRange.to, "M월 d일", { locale: ko })}`
+        : format(dateRange.from, "yyyy년 M월 d일", { locale: ko })
+      : "";
+
+    const rows = cards
+      .map(
+        (c) => `
+      <tr>
+        <td class="left">
+          <div class="word">${esc(c.word)}${c.phonetic ? ` <span class="ph">${esc(c.phonetic)}</span>` : ""}</div>
+          <div class="sent">${esc((c.example_sentence || "").split("\n")[0])}</div>
+        </td>
+        <td class="right">${esc(c.definition)}</td>
+      </tr>`
+      )
+      .join("");
+
+    const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8" />
+<title>단어 암기장 - ${esc(rangeLabel)}</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; color: #111; margin: 0; }
+  h1 { font-size: 16pt; margin: 0 0 2mm; }
+  .meta { font-size: 9pt; color: #666; margin-bottom: 4mm; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  td { vertical-align: top; padding: 2.5mm 0; border-bottom: 1px solid #e5e5e5; }
+  td.left { width: 50%; padding-right: 6mm; text-align: left; }
+  td.right { width: 50%; padding-left: 6mm; text-align: right; font-size: 11pt;
+    border-left: 1px dashed #999; }
+  .word { font-size: 13pt; font-weight: 700; }
+  .ph { font-size: 9pt; font-weight: 400; color: #666; }
+  .sent { font-size: 10pt; color: #333; margin-top: 1mm; font-style: italic; }
+  .fold { font-size: 8pt; color: #999; text-align: center; margin-top: 4mm; }
+</style></head><body>
+<h1>Word Master 단어 암기장</h1>
+<div class="meta">${esc(rangeLabel)} · 총 ${cards.length}개 · 가운데 점선을 따라 반으로 접어 사용하세요</div>
+<table>${rows}</table>
+<div class="fold">✂ 가운데 점선 기준으로 접으면 단어 또는 뜻을 가릴 수 있습니다</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) return;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => document.body.removeChild(iframe), 1000);
+    };
+  };
+
+
+
   if (quizWords) {
     return (
       <QuizScreen
