@@ -59,10 +59,10 @@ export default function Index() {
   const [cards, setCards] = useState<(Tables<"searched_words"> & { seq_no?: number })[]>([]);
   const [allWords, setAllWords] = useState<Tables<"searched_words">[]>([]);
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to?: Date | undefined }>(() => {
-    const today = new Date();
-    const weekAgo = new Date(today);
-    weekAgo.setDate(today.getDate() - 6);
-    return { from: weekAgo, to: today };
+    const todayKST = new Date(getKSTDateString(new Date()) + "T00:00:00");
+    const weekAgoKST = new Date(todayKST);
+    weekAgoKST.setDate(todayKST.getDate() - 6);
+    return { from: weekAgoKST, to: todayKST };
   });
   const selectedDate = dateRange.from;
   const [quizSetupOpen, setQuizSetupOpen] = useState(false);
