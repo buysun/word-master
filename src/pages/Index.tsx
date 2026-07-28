@@ -507,7 +507,9 @@ export default function Index() {
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {selectedDate ? format(selectedDate, "M월 d일", { locale: ko }) : ""} 단어로 만든 문단
+              {dateRange.from && dateRange.to && dateRange.from.getTime() !== dateRange.to.getTime()
+                ? `${format(dateRange.from, "M월 d일", { locale: ko })} ~ ${format(dateRange.to, "M월 d일", { locale: ko })} 단어로 만든 문단`
+                : `${dateRange.from ? format(dateRange.from, "M월 d일", { locale: ko }) : ""} 단어로 만든 문단`}
             </DialogTitle>
           </DialogHeader>
           {paragraphLoading && (
