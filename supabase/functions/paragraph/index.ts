@@ -67,7 +67,7 @@ Respond with ONLY a JSON object (no markdown, no commentary):
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
         ],
-        temperature: 0.8,
+        temperature: 1.1,
         max_tokens: 3000,
         response_format: { type: "json_object" },
       }),
