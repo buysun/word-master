@@ -391,6 +391,9 @@ export default function Index() {
             <Button variant="outline" size="sm" className="font-display text-xs" onClick={handleParagraphStart}>
               <FileText className="h-3.5 w-3.5 mr-1" /> 문단
             </Button>
+            <Button variant="outline" size="sm" className="font-display text-xs" onClick={handlePrint} title="A4 암기장 인쇄">
+              <Printer className="h-3.5 w-3.5 mr-1" /> 인쇄
+            </Button>
             {user ? (
               <>
                 <span className="inline-flex items-center gap-1 text-xs font-display bg-primary/10 text-primary rounded-md px-2 py-1" title="공부한 단어 수">
