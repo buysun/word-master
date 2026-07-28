@@ -48,10 +48,12 @@ Hard rules:
 - Vocabulary level: Korean 중1 (very simple, basic vocabulary and short, simple grammar — present/past tense, simple connectors like "and", "but", "because"). Avoid advanced or rare words outside the given list.
 - Then provide a natural Korean translation of the paragraph.
 
+VARIETY RULE (very important): Every time you are asked, you MUST produce a COMPLETELY NEW story — pick a different historical event/person, a different setting, and different sentence structures than any typical/obvious choice. Use the random variety token below to force a fresh angle.
+
 Respond with ONLY a JSON object (no markdown, no commentary):
 {"paragraph":"English paragraph here","translation":"한국어 번역"}`;
 
-    const userContent = `Date: ${dateLabel}\nWords: ${cleanWords.join(", ")}`;
+    const userContent = `Date: ${dateLabel}\nWords: ${cleanWords.join(", ")}\nVariety token (use it to pick a fresh, different event and wording): ${typeof nonce === "string" && nonce ? nonce : Math.random().toString(36).slice(2)}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
