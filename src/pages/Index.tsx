@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { BookOpen, FileText, CalendarIcon, Loader2, Volume2, Pen, Coins, LogOut } from "lucide-react";
+import { BookOpen, FileText, CalendarIcon, Loader2, Volume2, Pen, Coins, LogOut, Printer } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import LoginDialog from "@/components/LoginDialog";
 import { format } from "date-fns";
