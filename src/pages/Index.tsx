@@ -276,6 +276,7 @@ export default function Index() {
           month: m,
           day: d,
           year: y,
+          nonce: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
         },
       });
       if (error) throw error;
